@@ -1,10 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>$Title$</title>
-    </head>
-    <body>
-$END$
-    </body>
-</html>
+@(message: String)
+
+@main("Welcome") {
+    <div class = "container">
+        <div class="jumbotron">
+            <h1 class="title"><span class="wrap">Diamond Test, Landing Page</span></h1>
+        </div>
+
+        <button id="newB" class="btn btn-lg btn-primary">New Diagram</button>
+        <div id="new-params" class="btn-toolbar mb-3" role="toolbar" aria-label="Creation Parameters">
+
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <div class="input-group-text" id="btnGroupAddon"> Create </div>
+                </div>
+                <input id="wn-input" type="text" class="form-control" placeholder="Name" aria-label="Workspace Name" aria-describedby="btnGroupAddon">
+                <input id="wd-input" type="text" class="form-control" placeholder="Description" aria-label="Workspace Name" aria-describedby="btnGroupAddon">
+
+                <button id="create" class="btn btn-secondary">Create</button>
+            </div>
+        </div>
+
+
+        <button id="load" class="btn btn-lg btn-primary">Load Diagram</button>
+        <select id="sel" class="hidden"> </select>
+    </div>
+
+    <script>
+        $(function() {
+            $("#newB").click(function() {
+                $("#new-params").show("slide", { direction: "right" }, 200)
+            });
+
+            $("#create").click(function() {
+                $.get('/new', {name: $('#wn-input').val(), descr : $('#wd-input').val() } )
+                        .done (function(data) {
+                            window.location.href = '/w/'+data;
+                        }
+                )
+            });
+
+            $("#load").click(function() {
+                $.get('/').done(function(data) {
+                    console.log(data)
+                })
+            })
+        })
+    </script>
+}

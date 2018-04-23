@@ -1,10 +1,6 @@
-package diamond
+package diagrams.diamond.shapes
 
-import breeze.linalg._
-import diamond.core.{Direction, Pos}
-import shapeless.{::, HList, HNil}
-
-import scala.collection.AbstractSeq
+import diagrams.diamond.Pos
 
 
 object DotShapes {
@@ -127,7 +123,7 @@ object DotShapes {
   // FRAME
   // TH-FRAME
 
-  def parse[P <: Pos](pts: Set[P]) : DotShape[P] = {
+  /*def parse[P <: Pos](pts: Set[P]) : DotShape[P] = {
     ???
-  }
+  }*/
 }

@@ -1,6 +1,6 @@
-package diamond.core
+package diagrams.diamond
 
-import diamond.core.Direction.{ConcreteDir, Dir2L}
+import diagrams.diamond.Direction.{ConcreteDir, Dir2L}
 import shapeless.Nat._0
 
 import scala.language.implicitConversions

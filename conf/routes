@@ -3,8 +3,11 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
-GET     /db                         controllers.Application.db
+GET        /                            controllers.Application.index
+GET        /w/new                       controllers.DiagramIO.create_workspace
+GET        /w/$id<[0-9]*>/get           controllers.DiagramIO.read_workspace(id : Int)
+POST       /w/$id<[0-9]*>/update        controllers.DiagramIO.apply_op(id : Int)
+GET        /w/$id<[0-9]*>/              controllers.Application.display(id : Int)
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET        /assets/*file                controllers.Assets.at(path="/public", file)

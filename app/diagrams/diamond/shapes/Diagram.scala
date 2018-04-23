@@ -1,11 +1,8 @@
-package diamond
+package diagrams.diamond.shapes
 
-import diamond.core.Direction
-import diamond.shapes.NCell.{OneCell, ZCell}
+import diagrams.diamond.Direction
 
 abstract class Diagram {
-  val points: List[ZCell]
-  val lines: List[OneCell]
 }
 
 object Diagram {

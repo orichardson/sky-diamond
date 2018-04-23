@@ -10,12 +10,17 @@ $(function() {
     myCircle.fillColor = 'black';*/
 
     var scale = 50;
-    var offset = 200;
+    var offsetX = 200;
+    var offsetY = 200;
     var dot_size = offset/3;
 
     function toPix( array_of_values ) {
         // for now, this projects onto first two dimensions.
-        return new Point(array_of_values[0] * scale + offset, array_of_values[1] * scale + offset);
+        return new Point(array_of_values[0] * scale + offsetX, array_of_values[1] * scale + offsetY);
+    }
+
+    function fromPix( x, y )  {
+        return ((x-offsetX)/scale, (y-offsetY)/scale)
     }
 
     function new_pos() {

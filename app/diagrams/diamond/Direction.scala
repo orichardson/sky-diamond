@@ -1,7 +1,8 @@
-package diamond.core
+package diagrams.diamond
 
 // orientation = (x,y)
-abstract class Direction[T] (implicit conv: Numeric[T]) {
+
+trait Direction[T] {
   type Self /*>: this.type*/ <: Direction[T]
   def * (scale: T) : Self
   def * (scale: Int) : Self
@@ -12,7 +13,7 @@ object Direction {
   abstract class ConcreteDir[T, S <: ConcreteDir[T, _]]  (implicit conv: Numeric[T]) extends Direction[T] {
     override type Self = S
     def + (other: S) : S
-    def - (other: S {type Self = S} ) : S = this + ( (other * -1) : S )
+    def - (other: S {type Self = S} ) : S = this + ( other )
   }
 
   case class Dir2[T] (ori: (T,T)) (implicit conv: Numeric[T]) extends ConcreteDir[T, Dir2[T]]{
