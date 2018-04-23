@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
 	   cacheApi,
      guice,
 	   "org.postgresql" % "postgresql" % "42.2.2", // more databases. For postgres.
-     "com.h2database" % "h2" % "1.4.193", // still more databases, in-memory, for testing only?
+     //"com.h2database" % "h2" % "1.4.193",  still more databases, in-memory, for testing only?
      "org.playframework.anorm" %% "anorm" % "2.6.1", // more databases, unsure how important.
 
      "com.chuusai" %% "shapeless" % "2.3.3",
