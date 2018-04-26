@@ -1,42 +1,98 @@
-@(message: String)
+@import dbio.TableWrappers.WRow
+@import java.time.Instant
+@import java.time.Duration
+@import generic.Utils
 
-@main("Welcome") {
-    <div class = "container">
-        <div class="jumbotron">
-            <h1 class="title"><span class="wrap">Diamond Test, Landing Page</span></h1>
+@(workspaces: Map[Long, WRow])
+
+@card(id: Int, w : WRow) = {
+    <div class="col-auto mb-3">
+        <div class="card text-white bg-dark mb-3" style="width:25rem;">
+            <img class="card-img-top" src="@w.thumburl" alt="Diagram Preview">
+            <div class="card-body">
+                <h5 class="card-title">@w.name</h5>
+                <p class="card-text">@w.descr</p>
+                <a href="/w/@id/" class="btn btn-outline-info float-right">Load</a>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">Last updated @Utils.since(w.modified) ago</small>
+            </div>
         </div>
+    </div>
+}
 
-        <button id="newB" class="btn btn-lg btn-primary">New Diagram</button>
-        <div id="new-params" class="btn-toolbar mb-3" role="toolbar" aria-label="Creation Parameters">
+@main("Welcome", active="home") {
+    <div class = "container-fluid d-flex flex-column flex-fill">
+        <div class="row">
+            <div class="container">
+                <div class="spacer"></div>
+                <h1 class="title"><span class="wrap">Sky Diamond</span></h1>
+                <p>
+                    This is an in-progress diagrammatic theorem prover, based loosely on
+                    <a href="http://www.cl.cam.ac.uk/~mj201/publications/pub873.drii-ijcai1997.pdf">DIAMOND</a>, a diagrammatic proof assistant
+                    created by Mateja Jamnik in 1997. The present version is an attempt to unify some existing languages, and add
+                    more sophisticated proof search and automation capabilities.
 
-            <div class="input-group">
-                <div class="input-group-prepend">
-                    <div class="input-group-text" id="btnGroupAddon"> Create </div>
+                    For more information, see the link in the navbar above.
+                </p>
+                <div class="spacer"></div>
+
+                <h2>Create a New Diagrammatic Workspace</h2>
+
+                <div class="row">
+                    <div class="col-xs-10 col-sm-8 col-md-6 col-lg-4">
+                        <input id="wn-input" type="text" class="form-control minimal" placeholder="Name" aria-label="Workspace Name" >
+                        <textarea class="form-control minimal" id="wd-area" type="text" class="form-control" placeholder="Description" aria-label="Workspace Description" rows="2"></textarea>
+                    </div>
+                    <button id="create" class="btn btn-md btn-outline-primary"><i class="fas fa-paint-brush"></i><br/>
+                        Create</button>
                 </div>
-                <input id="wn-input" type="text" class="form-control" placeholder="Name" aria-label="Workspace Name" aria-describedby="btnGroupAddon">
-                <input id="wd-input" type="text" class="form-control" placeholder="Description" aria-label="Workspace Name" aria-describedby="btnGroupAddon">
 
-                <button id="create" class="btn btn-secondary">Create</button>
             </div>
         </div>
 
+        <div class="spacer"></div>
+        <div class="spacer"></div>
 
-        <button id="load" class="btn btn-lg btn-primary">Load Diagram</button>
-        <select id="sel" class="hidden"> </select>
+        <div class="row custom-dark-bg flex-fill">
+            <div class="container-fluid">
+                <div style="position:absolute; width:5px; bottom:0px; left:2px; background-color:#F00"></div>
+
+                <div class="spacer"></div>
+                <h2>Load an Existing Theorem</h2>
+                <div class="spacer"></div>
+
+                <div class="row justify-content-center"> <!--- card deck --->
+
+                    @for((i, w) <- workspaces) {
+                        @card(i.toInt, w)
+                    }
+
+                </div>
+            </div>
+        </div>
     </div>
-
+} {
     <script>
         $(function() {
-            $("#newB").click(function() {
-                $("#new-params").show("slide", { direction: "right" }, 200)
-            });
+            var $wn = $('#wn-input')
+            $wn.keypress(function() {
+                $wn.removeClass('border border-danger');
+            })
 
             $("#create").click(function() {
-                $.get('/new', {name: $('#wn-input').val(), descr : $('#wd-input').val() } )
-                        .done (function(data) {
-                            window.location.href = '/w/'+data;
-                        }
-                )
+                var n =  $wn.val();
+                var d =  $('#wd-area').val();
+
+                if(!n) {
+                    $wn.addClass('border border-danger');
+                } else {
+                    $.get('/w/new', {name: n, descr: d})
+                        .done(function (data) {
+                            window.location.href = '/w/' + data+ "/";
+                         }
+                    )
+                }
             });
 
             $("#load").click(function() {

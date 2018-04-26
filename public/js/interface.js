@@ -3,16 +3,24 @@ paper.Point.prototype.perp = function() {
 };
 
 $(function() {
+
+    /****************** SETUP ******************************/
+    // paper installation
     paper.setup(document.getElementById('DRAW'));
     paper.install(window);
 
-    /*myCircle = new Path.Circle(new Point(100, 70), 50);
-    myCircle.fillColor = 'black';*/
-
+    // view parameters (will change with viewport updates)
     var scale = 50;
     var offsetX = 200;
     var offsetY = 200;
-    var dot_size = offset/3;
+    var dot_size = scale/2;
+
+    // just a sandbox-y thing
+    var namesQ = [];
+    for(var i = 0;  i < 26; i++)
+        namesQ.push(String.fromCharCode(i + 97))
+    namesQ.reverse();
+
 
     function toPix( array_of_values ) {
         // for now, this projects onto first two dimensions.
@@ -20,13 +28,13 @@ $(function() {
     }
 
     function fromPix( x, y )  {
-        return ((x-offsetX)/scale, (y-offsetY)/scale)
+        return [(x-offsetX)/scale, (y-offsetY)/scale]
     }
 
     function new_pos() {
         var vs = paper.view.size;
-        return new Point(Math.random()* vs.x / scale - offset*2,
-                        Math.random() * vs.y /scale -offset*2 );
+        return new Point(Math.random()* vs.x / scale - offsetX*2,
+                        Math.random() * vs.y /scale -offsetY*2 );
     }
 
     window.points = {};
@@ -77,11 +85,10 @@ $(function() {
 
         window.areas[a.name] = a    }
 
-    $.getJSON('/d/'+window.diagram_id+'/get').done( function(data) {
-        data["0-cells"].forEach( create_point );
-        data["1-cells"].forEach( create_segment );
-        data["2-cells"].forEach( create_area );
-
+    $.getJSON('/w/'+window.diagram_id+'/get').done( function(data) {
+        if("0-cells" in data) data["0-cells"].forEach( create_point );
+        if("1-cells" in data) data["1-cells"].forEach( create_segment );
+        if("2-cells" in data) data["2-cells"].forEach( create_area );
     });
 
     var tool = new Tool();

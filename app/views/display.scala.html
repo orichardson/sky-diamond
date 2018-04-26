@@ -1,19 +1,25 @@
-@(name: String, diagramID: Int)
+@import dbio.TableWrappers._
 
-@main("Display") {
-    <h1> Workspace: @name </h1>
+@(w: WRow, diagramID: Long)
 
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-lg-2 col-md-3 col-sm-4 col-xs-12">  <textarea class="form-control" style="height:100%"></textarea> </div>
+@main(w.name) {
+
+    <div class = "container-fluid d-flex flex-column flex-fill">
+        <div class="row"><div class="col-12"><h1>@w.name </h1></div></div>
+        <div class="row flex-fill inner-container">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-12 flex-fill d-flex flex-column">
+                <p class="small"> @w.descr </p>
+                <textarea class="console flex-fill"></textarea>
+            </div>
+
+            <div class="col-xl-10 col-lg-19 col-md-8 col-sm-7 col-12 flex-fill d-flex flex-column">
+                <canvas id="DRAW" resize="true" class="flex-fill"></canvas>
+            </div>
         </div>
     </div>
-    <div>
-        <canvas id="DRAW" resize="true"></canvas>
-    </div>
 
-    <div id="footer" class="container">
-        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+    <div id="footer" class="fixed-bottom">
+        <div class="btn-toolbar float-right" role="toolbar" aria-label="Toolbar with button groups">
             <div class="btn-group mr-2" role="group" aria-label="First group">
                 <button type="button" class="btn btn-secondary">Point</button>
                 <button type="button" class="btn btn-secondary">Segment</button>
@@ -29,11 +35,11 @@
             </div>
         </div>
     </div>
-
+}{
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.4/paper-full.js"></script>
     <script type="text/javascript" src="@routes.Assets.at("js/interface.js")"></script>
     <script type="text/javascript">
         /* all of the code goes here */
-        window.diagram_id = @diagramID /* this can easily be traced with session ID + sent over */
+        window.diagram_id = @diagramID ; /* this can easily be traced with session ID + sent over */
     </script>
 }

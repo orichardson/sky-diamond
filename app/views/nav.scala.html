@@ -1,14 +1,27 @@
-<nav class="navbar navbar-default navbar-static-top navbar-inverse">
-    <div class="container">
-        <ul class="nav navbar-nav">
-            <li class="active">
-                <a href="/"><span class="glyphicon glyphicon-home"></span> Home</a>
-            </li>
-        </ul>
-        <ul class="nav navbar-nav navbar-right">
-            <li class="navbar-right">
-                <a href="#"><span class="glyphicon glyphicon-book"></span> Documentation </a>
-            </li>
-        </ul>
-    </div>
+@(active:String)
+
+
+@navitem(name : String, icon:String, href: String = "#", other_classes:String="") = {
+    <li class="nav-item">
+        <a class="nav-link @{if(active.toLowerCase == name.toLowerCase) "active" else ""} @other_classes" href="@href">
+            <i class="fas fa-fw fa-@icon"></i> <br/> @name </a>
+
+    </li>
+}
+
+
+<nav class="nav navbar navbar-expand-lg justify-content-center bg-light">
+    <a class="navbar-brand" href="#">
+        <svg width="40" height="40">
+            <polygon points="5,20 20,0 35,20 20,40"></polygon>
+        </svg>
+    </a>
+    <ul class="nav nav-pills">
+        @navitem("Home", "child", "/")
+        @navitem("Theorems", "cubes")
+        @navitem("Geometry", "th")
+        @navitem("Examples", "braille")
+        @navitem("Background", "info")
+        @navitem("Thesis", "book", other_classes="disabled")
+    </ul>
 </nav>
