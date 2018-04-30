@@ -18,7 +18,7 @@ CREATE TABLE Cells (
   blade real [],
   mag text,
   sub varchar(20) [],
-  super varchar(20) []
+  sup varchar(20) []
 );
 
 

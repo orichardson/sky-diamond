@@ -1,4 +1,4 @@
-@import dbio.TableWrappers._
+@import dbio.TableWrappers.WRow
 
 @(w: WRow, diagramID: Long)
 
@@ -8,7 +8,7 @@
         <div class="row"><div class="col-12"><h1>@w.name </h1></div></div>
         <div class="row flex-fill inner-container">
             <div class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-12 flex-fill d-flex flex-column">
-                <p class="small"> @w.descr </p>
+                <p class="small text-muted"> @w.descr </p>
                 <textarea class="console flex-fill"></textarea>
             </div>
 
@@ -37,9 +37,20 @@
     </div>
 }{
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.4/paper-full.js"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/versor.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/C2.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/C3.js")"></script>
+
+
+    <script type="text/javascript" src="@routes.Assets.at("js/util.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/maths.js")"></script>
+    <!--    load core.js as first paper module (but after paper.js, util and maths)  -->
+    <script type="text/javascript" src="@routes.Assets.at("js/core.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/tools.js")"></script>
+    <!--    load interface.js last -->
     <script type="text/javascript" src="@routes.Assets.at("js/interface.js")"></script>
+
     <script type="text/javascript">
-        /* all of the code goes here */
         window.diagram_id = @diagramID ; /* this can easily be traced with session ID + sent over */
     </script>
 }

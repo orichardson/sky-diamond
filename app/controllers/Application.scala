@@ -64,8 +64,14 @@ class Application  @Inject()(db: Database, val cc: ControllerComponents)
   }
 
   def get_cells(wid: Long) = Action {
-    var results : Map[String, Seq[CellRow]] = db.withConnection( c_sql.select(s"WHERE workspace = $wid").go(_))
-      .groupBy(_.dim).map( d_v => (d_v._1+"-cells", d_v._2) )
+    Logger.debug("STARTING")
+    Logger.debug("qstring before connection: "+ c_sql.select(s"where workspace = $wid").qstring)
+    var results /*: Map[String, Seq[CellRow]] */ = db.withConnection { implicit c =>
+        val q = c_sql.select(s"WHERE workspace = $wid")
+        Logger.debug(q.qstring)
+        q.go(c)
+      }
+     .groupBy(_.dim).map( d_v => (d_v._1+"-cells", d_v._2) )
 
     Ok(Json.toJson(results))
   }

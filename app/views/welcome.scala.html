@@ -39,9 +39,28 @@
 
                 <h2>Create a New Diagrammatic Workspace</h2>
 
+                <div class="spacer"></div>
+
                 <div class="row">
-                    <div class="col-xs-10 col-sm-8 col-md-6 col-lg-4">
-                        <input id="wn-input" type="text" class="form-control minimal" placeholder="Name" aria-label="Workspace Name" >
+                    <div class="col-xs-10 col-sm-9 col-md-7 col-lg-6">
+                        <div class="row">
+                            <div class="col-12 col-md-7">
+                                <input id="wn-input" type="text" class="form-control minimal" placeholder="Name" aria-label="Workspace Name" >
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <div class="input-group mb-3">
+                                    <div class="input-group-prepend">
+                                        <label class="input-group-text" for="inputGroupSelect01">Options</label>
+                                    </div>
+                                    <select class="custom-select" id="inputGroupSelect01">
+                                        <option selected>Choose...</option>
+                                        <option value="E2">2D Euclidean</option>
+                                        <option value="C2">Two</option>
+                                        <option value="E3">Three</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
                         <textarea class="form-control minimal" id="wd-area" type="text" class="form-control" placeholder="Description" aria-label="Workspace Description" rows="2"></textarea>
                     </div>
                     <button id="create" class="btn btn-md btn-outline-primary"><i class="fas fa-paint-brush"></i><br/>
