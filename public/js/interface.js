@@ -6,6 +6,20 @@ $(function() {
         if("2-cells" in data) data["2-cells"].forEach(c => new core.Area(c) );
     });
 
+    var toggle = true;
+    $('#dual_button').click(function (event) {
+        toggle = !toggle;
+        if(toggle) {
+            core.dualify();
+            core.dual.layer.opacity = 1;
+            core.standard.layer.opacity = 0.1;
+        }
+        else {
+            core.dual.layer.opacity = 0;
+            core.standard.layer.opacity = 1;
+        }
+    });
+
 
     tools.drawTool.activate();
 

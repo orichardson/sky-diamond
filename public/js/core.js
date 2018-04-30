@@ -21,6 +21,12 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         paper.install(window);
 
         var core = {};
+        core.dual = {};
+        core.standard = {};
+
+        core.standard.layer = paper.project.activeLayer;
+        core.dual.layer = paper.project.insertLayer(0, new Layer());
+
         core.Geom = versor.create({metric:[1,1]});
 
         // view parameters (will change with viewport updates)
@@ -61,6 +67,14 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             return [(point.x - offsetX) / scale, (point.y - offsetY) / scale]
         }
 
+        function dual_blade(blade) {
+            // this is really dumb.
+            if(blade.length === 2)
+                return [-blade[1], blade[0]];
+
+            return blade;
+        }
+
         core.toPix = toPix;
         core.toPixD = toPixD;
         core.fromPix = fromPix;
@@ -74,6 +88,10 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         core.points = {};
         core.segments = {};
         core.areas = {};
+
+        core.dual.v = {};
+        core.dual.e = {};
+        core.dual.f = {};
 
         const cell_proto = {
             get name() { return this.data.name; },
@@ -97,11 +115,29 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             }
         };
 
+        const dual_data = {
+            get: function() {
+                return {
+                    pos : this.dopelganger.pos,
+                    blade: dual_blade(this.dopelganger.blade), // TODO: this is actually the dual blade.
+                    sub: this.dopelganger.sup,
+                    sup: this.dopelganger.sub,
+                    name: this.dopelganger.name
+                }
+            },
+            set: function(dat) {
+                if("pos" in dat) this.dopelganger.pos  = dat.pos;
+                if("sub" in dat) this.dopelganger.sup  = dat.sub;
+                if("sup" in dat) this.dopelganger.sub  = dat.sup;
+                if("name" in dat) this.dopelganger.name  = dat.name;
+                if("blade" in dat) this.dopelganger.blade  = dual_blade(dat.blade);
+            }
+        };
+
         function Vert (p) { // {pos, name, ...dbvars...}
-
-
-
+            core.standard.layer.activate();
             removeFrom(v_namesQ, p.name);
+
             var pos = core.toPix(("pos" in p) ? p.pos : new_pos());
 
             var new_dot = new Path.Circle(pos, dot_size);
@@ -130,7 +166,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
             core.points[p.name] = this;
         }
-        Vert.prototype = cell_proto;
+        Vert.prototype = Object.create(cell_proto, {});
         Vert.prototype._sub_type = [];
         Vert.prototype._my_type = core.points;
         Vert.prototype._sup_type = core.segments;
@@ -152,39 +188,91 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 let other = core.points[seg.sub.find( x => x !== this.name)];
 
                 if( Vec.dot(seg.data.blade, Vec.minus(other.pos, this.pos)) < 0)
-                    to_return.push([other, Vec.neg(seg.data.blade), seg.name]);
-                else
-                    to_return.push([other, seg.data.blade, seg.name]);
+                    continue; // there will be another edge going the other way.
+
+                to_return.push([other, seg.data.blade, seg.name]);
             }
 
             return to_return;
         };
 
-        function Seg (l) {
+
+        function DualVert ( area ) { // {pos, name, ...dbvars...}
+            this.dopelganger = area;
+
+            let options = {insert: area.path.isInserted()};
+
+            core.dual.layer.activate();
+            var pos = core.toPix(area.data.pos);
+
+            if (options.insert !== false) {
+                var new_dot = new Path.Circle(pos, dot_size);
+                new_dot.fillColor = '#000';
+                new_dot.strokeColor = area.color;
+                new_dot.strokeWidth = 2;
+                this.path = new_dot;
+
+                var ptext = new PointText(pos, options);
+                ptext.content = area.name;
+                ptext.style = {
+                    fontFamily: 'Courier New',
+                    fontWeight: 'bold',
+                    fontSize: 24,
+                    fillColor: '#FFF',
+                    justification: 'center'
+                };
+                ptext.translate([0, ptext.getBounds().height / 4]);
+                this.ptext = ptext;
+            }
+
+            this.color = area.color;
+
+            core.dual.v[area.name] = this;
+        }
+        function DV() {}
+        DualVert.prototype = Object.create(cell_proto, {});
+        DualVert.prototype._sub_type = [];
+        DualVert.prototype._my_type = core.dual.v;
+        DualVert.prototype._sup_type = core.dual.e;
+        Object.defineProperty(DV.prototype, 'data', dual_data);
+
+
+        function Seg (l, options) {
+            options = options || {};
+
             let endpoints = l.sub;
-            // console.log(endpoints);
-            // should be two of these
+            core.standard.layer.activate();
 
             let start = core.points[endpoints[0]].path.position;
             let end = core.points[endpoints[1]].path.position;
-            // TODO: sometimes these won't have positions!
+            // TODO: sometimes these won't have positions..?
 
+            //TODO: for arbitrary blades.
             let handle = core.toPixD(l.blade).multiply(0.5);
+
             let offset = handle.perp().normalize().multiply(14).add([0, 6]);
 
-            let ptext = new PointText(("pos" in l ? toPix(l.pos) : start.interp(end, 0.33)).add(offset) );
-            ptext.content = l.name;
-            ptext.style = {
-                fontFamily: 'Courier New',
-                fontWeight: 'bold',
-                fontSize: 16,
-                fillColor: '#CCC',
-                justification: 'center'
-            };
-            ptext.rotation = Math.abs(handle.angle) <= 95 ? handle.angle :  handle.angle + 180;
+            var path;
 
-            let path = new Path(new Segment(start, null, handle),
-                new Segment(end, handle.multiply(-1), null));
+            if(options.insert !== false) {
+                let ptext = new PointText(("pos" in l ? toPix(l.pos) : start.interp(end, 0.33)).add(offset));
+                ptext.content = l.name;
+                ptext.style = {
+                    fontFamily: 'Courier New',
+                    fontWeight: 'bold',
+                    fontSize: 16,
+                    fillColor: '#CCC',
+                    justification: 'center'
+                };
+                ptext.rotation = Math.abs(handle.angle) <= 95 ? handle.angle : handle.angle + 180;
+                this.ptext = ptext;
+                path = new Path();
+            }else {
+                path = new Path({insert:false});
+            }
+            path.segments = [new Segment(start, null, handle),
+                new Segment(end, handle.multiply(-1), null)];
+
             path.strokeWidth = 2;
             path.strokeColor = '#555';
 
@@ -193,8 +281,69 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             //l.path.segments[1].selected = true;
 
             this.path = path;
-            this.ptext = ptext;
+
             this.data = l;
+            core.segments[l.name] = this;
+        }
+        Seg.prototype = Object.create(cell_proto, {});
+        Seg.prototype._sub_type = core.points;
+        Seg.prototype._my_type = core.segments;
+        Seg.prototype._sup_type = core.areas;
+
+        function DualEdge (l) {
+            let endpoints = l.sup;
+            // console.log(endpoints);
+            // should be two of these
+
+            let options = {insert:l.path.isInserted()};
+
+            this.dopelganger = l;
+            core.dual.layer.activate();
+
+            console.log(l.name, endpoints);
+
+            let handle = core.toPixD(dual_blade(l.data.blade)).multiply(0.5);
+
+            let start = core.dual.v[endpoints[0]].path.position;
+            let end = endpoints.length > 1 ? core.dual.v[endpoints[1]].path.position : start.add(handle.multiply(3));
+
+            let startC = core.dual.v[endpoints[0]].color;
+            let endC = endpoints.length > 1 ? core.dual.v[endpoints[1]].color : '#FFF';
+            // TODO: sometimes these won't have positions!
+
+            let offset = handle.perp().normalize().multiply(14).add([0, 6]);
+
+            if( options.insert !== false ) {
+                let ptext = new PointText(("pos" in l ? toPix(l.pos) : start.interp(end, 0.33)).add(offset));
+                ptext.content = l.name;
+                ptext.style = {
+                    fontFamily: 'Courier New',
+                    fontWeight: 'normal',
+                    fontSize: 16,
+                    fillColor: '#AAA',
+                    justification: 'center'
+                };
+                ptext.rotation = Math.abs(handle.angle) <= 95 ? handle.angle : handle.angle + 180;
+                this.ptext = ptext;
+            }
+
+            let path = new Path(options);
+            path.segments = [new Segment(start, null, handle),
+                new Segment(end, handle.multiply(-1), null)];
+            path.strokeWidth = 4;
+            path.strokeColor = {
+                gradient: {
+                    stops: [startC, endC]
+                },
+                origin: start,
+                destination: end
+            };
+
+            path.sendToBack();
+            //l.path.segments[0].selected = true;
+            //l.path.segments[1].selected = true;
+
+            this.path = path;
 
 
             /* for debugging convenience
@@ -202,40 +351,50 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 this[prop] = p[prop];
             }*/
 
-            core.segments[l.name] = this;
+            core.dual.e[l.name] = this;
         }
-        Seg.prototype = cell_proto;
-        Seg.prototype._sub_type = core.points;
-        Seg.prototype._my_type = core.segments;
-        Seg.prototype._sup_type = core.areas;
+        DualEdge.prototype = Object.create(cell_proto, {});
+        DualEdge.prototype._sub_type = core.dual.v;
+        DualEdge.prototype._my_type = core.dual.e;
+        DualEdge.prototype._sup_type = core.dual.f;
+        //Object.defineProperty(DualEdge.prototype, 'data', dual_data);
 
 
-        function Area( a, color ) {
 
+        function Area( a, color, options ) {
             let segs = a.sub;
 
-            let path = new Path(flatMap(x => core.segments[x].path.segments, segs));
+            options = options || {};
+            core.standard.layer.activate();
+
+            let path = new Path(flatMap(x => core.segments[x].path.segments, segs), options);
             path.fillColor = color;
             path.opacity = 0.3;
             path.sendToBack();
 
-            let ptext = new PointText(("pos" in a ? toPix(a.pos) : path.position).add([0,7])) ;
-            ptext.content = a.name;
-            ptext.style = {
-                fontFamily: 'Courier New',
-                fontWeight: 'bold',
-                fontSize: 24,
-                fillColor: new Color(color).darker(0.5),
-                justification: 'center'
-            };
+            if(options.insert !== false) {
 
+                let ptext = new PointText(("pos" in a ? toPix(a.pos) : path.position).add([0, 7]));
+                ptext.content = a.name;
+                ptext.style = {
+                    fontFamily: 'Courier New',
+                    fontWeight: 'bold',
+                    fontSize: 24,
+                    fillColor: new Color(color).darker(0.5),
+                    justification: 'center'
+                };
+
+                this.ptext = ptext;
+            }
+
+            this.color = color;
             this.path = path;
-            this.ptext = ptext;
             this.data = a;
 
             core.areas[a.name] = this;
         }
-        Area.prototype = cell_proto;
+
+        Area.prototype = Object.create(cell_proto, {});
         Area.prototype._sub_type = core.segments;
         Area.prototype._my_type = core.areas;
         Area.prototype._sup_type = [];
@@ -335,8 +494,22 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 pos: Vec.interp(p1.data.pos, p2.data.pos, 0.33)
             });
 
+            l2 = new Seg({
+               name : p2.name + p1.name,
+               sup: [],
+               sub: [p2.name, p1.name],
+               blade: Vec.neg(blade),
+               mag: mag,
+               pos: Vec.interp(p2.data.pos, p1.data.pos, 0.33)
+            }, {insert:false});
+
+            l.flipped = l2;
+            l2.flipped = l;
+
             p1.data.sup.push(l.name);
+            p1.data.sup.push(l2.name);
             p2.data.sup.push(l.name);
+            p2.data.sup.push(l2.name);
 
             // determine if we made an area, and if so, add it
             // trace with + and - angle. Each has to be in the same plane as its predecessors.
@@ -375,7 +548,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
                     }
 
-                    angle_sum += (Math.PI - best_angle);
+                    angle_sum += (best_angle);
                     at_v = bestV;
                     prev_seg = bestS;
                     prev_blade = bestB;
@@ -395,7 +568,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 paths[0][1], "\nand", paths[1][0].map(x => x),  paths[1][1], '\n\n');
 
             let path = paths[0][0];
-            if( path[path.length-1] !== l.name)
+            if( path[path.length-1] !== l.name && path[path.length-1] !== l2.name)
                 core.auto_a(path.map(s => core.segments[s]));
 
 
@@ -404,34 +577,46 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
         core.auto_a = function( segs ) {
             let midpoint = Vec.scale(segs.map(s => s.pos).reduce( (a,b) => Vec.plus(a,b) ), 1/segs.length);
+            let color = colorsQ.pop();
+            let name = a_namesQ.pop();
 
             let a = new Area({
-                name : a_namesQ.pop(),
+                name : name,
                 sub: segs.map(s => s.name),
                 sup: [],
                 blade: [],
                 mag: undefined,
                 pos: midpoint
-            }, colorsQ.pop() );
+            },  color);
 
-            segs.forEach( s => s.data.sup.push(a.name) );
+            let a2 = new Area({
+                name : "~"+name,
+                sub: segs.splice().reverse().map(s => s.name),
+                sup: [],
+                blade: [],
+                mag: undefined,
+                pos: midpoint
+            },  color, {insert:false});
+
+
+            segs.forEach( function(s){
+                console.log(s.flipped);
+                s.data.sup.push(a.name);
+                s.flipped.data.sup.push(a2.name);
+            });
 
             return a;
         };
 
         core.dualify = function() {
-            let a = paper.project.activeLayer;
-            a.opacity = 0.3;
+            core.standard.layer.opacity = 0.3;
 
-            let dl = paper.project.insertLayer(0, new Layer());
-            dl.activate();
             for(name in core.areas) {
-                new Vert({
-                    name: name,
-                    sub: [],
-                    sup: core.areas[name].sub,
-                    pos: core.areas[name].pos
-                })
+                new DualVert(core.areas[name]);
+            }
+
+            for (name in core.segments) {
+                new DualEdge(core.segments[name]);
             }
         };
 
