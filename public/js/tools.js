@@ -12,12 +12,14 @@
             var lastPointMade = null;
             var dir = new Point(0, 0);
             var shift  = false;
-            t.minDistance = 2;
+            t.minDistance = 5;
 
             t.onMouseDown = function(event) {
                 path = new Path();
                 path.add(event.point);
                 path.strokeColor = '#AAA';
+
+                lastPointMade = core.auto_pt(event.point);
             };
 
             t.onMouseDrag = function(event) {
@@ -28,8 +30,8 @@
                 //console.log(diff.dot(dir), diff.getDistance() * dir.getDistance());
 
 
-                if(diff.dot(dir)/(diff.mag() * dir.mag()+0.001) < 0.5 &&
-                        (closest.dist > 1 || closest.dist <= core.thresh_overlap)) {
+                if(closest.dist <= core.thresh_overlap ||
+                    (diff.dot(dir)/(diff.mag() * dir.mag()+0.001) < 0.5 &&  closest.dist > 1)) {
                     //console.log("^^^^^^^^^")
                     var p = core.auto_pt(last);
                     if(lastPointMade)
@@ -68,6 +70,30 @@
         })();
 
 
+        let eraseTool = (function() {
+            let t = new Tool();
+
+            t.onMouseDown = function(event) {
+                for(n in core.points) {
+
+                }
+            };
+
+            t.onMouseDrag = function(event) {
+
+            };
+
+            t.onMouseUp = function(event) {
+            };
+
+            tool.onKeyUp = function(event) {
+            };
+            tool.onKeyDown = function(event) {
+
+            };
+        })();
+
+
         let panTool = (function() {
             let t = new Tool();
 
@@ -90,7 +116,9 @@
         })();
 
 
-        global.tools = { drawTool : drawTool };
+        global.tools = { draw : drawTool,
+            erase : panTool,
+            dud : new Tool()};
     });
 
 })(this); // closure to hide implementation details, register to global object

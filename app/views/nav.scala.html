@@ -4,7 +4,7 @@
 @navitem(name : String, icon:String, href: String = "#", other_classes:String="") = {
     <li class="nav-item">
         <a class="nav-link @{if(active.toLowerCase == name.toLowerCase) "active" else ""} @other_classes" href="@href">
-            <i class="fas fa-fw fa-@icon"></i> <br/> @name </a>
+            <i class="fas fa-fw fa-@icon"></i> <br/> @name.capitalize </a>
 
     </li>
 }

@@ -6,7 +6,29 @@ $(function() {
         if("2-cells" in data) data["2-cells"].forEach(c => new core.Area(c) );
     });
 
-    var toggle = true;
+    const $toolbuttons = $("button.tool");
+
+    $toolbuttons.click(function(event){
+        let $this_button = $(this);
+        $toolbuttons.not($this_button)
+            .removeClass("active")
+            .find(".tool-text").hide();
+        let tt =  $this_button.find(".tool-text");
+
+        let active = tt.is(":hidden");
+        tt.toggle(100);
+        if(active) {
+            $this_button.addClass("active");
+            tools[$this_button.attr("data-tool")].activate();
+        } else {
+            $this_button.removeClass("active");
+            $this_button.blur();
+            tools.dud.activate();
+        }
+
+    });
+
+    let toggle = false;
     $('#dual_button').click(function (event) {
         toggle = !toggle;
         if(toggle) {
@@ -21,7 +43,7 @@ $(function() {
     });
 
 
-    tools.drawTool.activate();
+    tools.dud.activate();
 
 
     function onFrame(event) {

@@ -20,6 +20,11 @@ function union(setA, setB) {
 }
 
 
+paper.Color.prototype.interp = function(other, amt) {
+    return new paper.Color(Vec.interp(this.components, other.components, amt));
+};
+
+
 paper.Color.prototype.brighter = function(amt) {
     return this.components.map( v => v  + (1-v)*amt )
 };

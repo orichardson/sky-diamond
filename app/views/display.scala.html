@@ -2,37 +2,68 @@
 
 @(w: WRow, diagramID: Long)
 
+@toolButton(name: String, icon:String) = {
+    <button class="btn btn-outline-primary tool" id="@name-button" data-tool="@name">
+        &nbsp;<i class="fas fa-@icon"></i> <br/>
+        <span class="tool-text">@name.capitalize</span>
+    </button>
+}
+
+@actionButton(text: String, icon:String) = {
+    <button class="btn btn-outline-dark"> <i class="fas fa-@icon"></i>  <br/><span class="">@text.capitalize</span></button>
+}
+
 @main(w.name) {
 
     <div class = "container-fluid d-flex flex-column flex-fill">
-        <div class="row"><div class="col-12"><h1>@w.name </h1></div></div>
-        <div class="row flex-fill inner-container">
-            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-12 flex-fill d-flex flex-column">
-                <p class="small text-muted"> @w.descr </p>
-                <textarea class="console flex-fill"></textarea>
+        <div class="row"><div class="col-12"></div></div>
+        <div class="row flex-fill" id="inner-container">
+            <div id="left-bar" class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-12 flex-fill d-flex flex-column">
+                <h1 class="overset"> @w.name </h1>
+
+                <div style="position:relative;" class="flex-fill d-flex flex-column">
+                    <p class="small text-muted"> @w.descr </p>
+                    <textarea class="console flex-fill"></textarea>
+                    <a class="float-ul"> <i class="fas fa-angle-left"></i></a>
+                </div>
+
             </div>
 
-            <div class="col-xl-10 col-lg-19 col-md-8 col-sm-7 col-12 flex-fill d-flex flex-column">
+            <div class="col-xl-10 col-lg-19 col-md-8 col-sm-7 col-12 flex-fill d-flex flex-column lean">
                 <canvas id="DRAW" resize="true" class="flex-fill"></canvas>
+            </div>
+
+            <div id="tools-bar" class="float-ul">
+                <div class="spacer"></div>
+                <h4>Tools</h4>
+                @toolButton("manual", "mouse-pointer")
+                @toolButton("draw", "pencil-alt")
+                @toolButton("erase", "eraser")
+                @toolButton("move", "arrows-alt")
+                @toolButton("manual", "mouse-pointer")
+                @toolButton("view", "eye")
+
+
+                <hr/>
+                <div class="spacer"></div>
+
+                @actionButton("save", "save")
+                @actionButton("align", "save")
+
             </div>
         </div>
     </div>
 
+
+
+
+
     <div id="footer" class="fixed-bottom">
         <div class="btn-toolbar float-right" role="toolbar" aria-label="Toolbar with button groups">
-            <div class="btn-group mr-2" role="group" aria-label="First group">
-                <button type="button" class="btn btn-secondary">Point</button>
-                <button type="button" class="btn btn-secondary">Segment</button>
-                <button type="button" class="btn btn-secondary">Area</button>
-            </div>
-            <div class="btn-group mr-2" role="group" aria-label="Second group">
-                <button type="button" class="btn btn-secondary">Cut</button>
-                <button type="button" class="btn btn-secondary">Glue</button>
-                <button type="button" class="btn btn-secondary">Transform</button>
-            </div>
-            <div id="dual_button" class="btn-group" role="group" aria-label="Third group">
-                <button type="button" class="btn btn-secondary">Dual</button>
-            </div>
+            <h4>Saved Shapes</h4>
+
+            @actionButton("square", "square")
+
         </div>
     </div>
 }{

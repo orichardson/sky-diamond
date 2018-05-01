@@ -24,6 +24,52 @@
     outline: none;
 }
 
+.overset {
+    overflow:visible;
+    white-space: nowrap;
+    position:relative;
+    z-index:100;
+    text-shadow: 0px 0px 10px rgba(255, 255, 255, 1.0);
+}
+
+#inner-container {
+    position:relative;
+}
+
+#tools-bar {
+    text-align: right;
+    padding-right:4px;
+}
+
+#tools-bar > button {
+    display:block;
+    margin-left:auto;
+    margin-right:0;
+    margin-bottom: 6px;
+    border-width: 1px 1px 1px 1px;
+    text-align:center;
+}
+
+
+#tools-bar .tool-text {
+    display:none;
+}
+
+.float-ul {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+}
+
+.lean {
+    padding-left: 2px;
+    padding-right: 2px;
+}
+
+#left-bar {
+    padding-right:0px;
+}
+
 .console:focus {
     box-shadow: none ;
 }
