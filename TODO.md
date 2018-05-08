@@ -37,7 +37,7 @@ PHASE 0 : Choose Geometry
 
 		3D:
 
-
+α
 
 PHASE 1 : create an n-cell of any kind
 	create points (positions? kinda?)

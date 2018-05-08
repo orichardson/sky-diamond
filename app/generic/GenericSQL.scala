@@ -4,13 +4,17 @@ import java.sql.Connection
 
 import anorm._
 import shapeless._
-import shapeless.ops.hlist.{LeftFolder, ToList, ZipWithIndex}
+import shapeless.ops.hlist.{LeftFolder, Mapper, ToList, ZipWithIndex}
 import shapeless.record._
 import shapeless.ops.record._
 import shapeless.syntax.singleton._
 import GenericSQL.Q
 import anorm.SimpleSql.SimpleSqlShow
 import anorm.SqlParser.long
+import generic.GenericSQL.fix_sql_repr.at
+import play.Logger
+
+import scala.reflect.ClassTag
 
 // provides SQL methods for an A
 
@@ -20,6 +24,8 @@ trait GenericSQL[A] {
   def updateRow[IdType](a : A, id: IdType) : Q[Int]
   def delete( rest : String) : Q[Unit]
 
+  def updateField[T : ToParameterValue : ClassTag](colname: String, newVal : T, rest: String) : Q[Int]
+
   // secondary
   def select_with_id(where : String="") : Q[Map[Long, A]]
   def lookup[IdType] ( id : IdType) : Q[A]
@@ -28,6 +34,8 @@ trait GenericSQL[A] {
 }
 
 object GenericSQL {
+  type BoxedReal = java.lang.Float
+
   trait Q[Rslt] {
 
     def run(q : SimpleSql[Row])(implicit conn : Connection) : Rslt
@@ -60,6 +68,23 @@ object GenericSQL {
   // before running this. Instead, I can create a new kind of object.
   def apply[A](implicit genericSQL: PartialSQL[A]) : PartialSQL[A] = genericSQL
 
+
+  trait base_id_map extends Poly1 { implicit def default[T] = at[T](identity)   }
+
+  trait base_arrayify_map extends base_id_map {
+    implicit def caseOtherList[T : ClassTag] = at[List[T]]( l => l.toArray )  }
+  object fix_sql_repr extends base_arrayify_map {
+    implicit def caseListDouble = at[List[Double]]( l => l.map(d => new BoxedReal(d)).toArray)
+  }
+
+  trait base_labelled_arrarify extends base_id_map {
+    implicit def caseListOther[T : ClassTag, S <: Symbol] = at[(S, List[T])]( sl => (sl._1,  sl._2.toArray ) )
+  }
+  object fix_labelled_sql_repr extends base_labelled_arrarify {
+    implicit def caseListDouble[S <: Symbol] = at[(S, List[Double])]( sl => (sl._1,  sl._2.map(d => new BoxedReal(d)).toArray ) )
+  }
+
+
   object combine_sql extends Poly {
     implicit def write2Query[T : ToParameterValue, R <: Symbol]
     = use((so_far: SimpleSql[Row], tn: (R, T)) => so_far.on(tn._1 -> tn._2))
@@ -84,14 +109,15 @@ object GenericSQL {
     * @return a PartialSQL[A] for any type A! -- can be completed with a table name and id column
     *          to gain access to query generation methods detailed above.
     */
-  implicit def generate[A, Rep <: HList, K <: HList, V <: HList, F <: HList]
+  implicit def generate[A, Rep <: HList, K <: HList, V <: HList, F <: HList, FFixed <: HList]
           //implicit parameters all give information about the table itself.
               (implicit genAWit: LabelledGeneric.Aux[A, Rep],
                keys : Keys.Aux[Rep, K],
                ktl: ToList[K, Symbol],
                vals: Values.Aux[Rep, V],
                to_pairs: Fields.Aux[Rep, F],
-               folder: LeftFolder.Aux[F, SimpleSql[Row], combine_sql.type, SimpleSql[Row]]
+               connector: Mapper.Aux[fix_labelled_sql_repr.type, F, FFixed],
+               folder: LeftFolder.Aux[FFixed, SimpleSql[Row], combine_sql.type, SimpleSql[Row]]
                                           ) : PartialSQL[A]
   = new PartialSQL[A] {
     var names : Seq[String] = keys().toList.map(_.name)
@@ -122,26 +148,51 @@ object GenericSQL {
       override def insert(a: A) = new Q[Option[Long]] {
         override lazy val qstring = s"INSERT INTO $table_name VALUES(${genAWit.to(a).values.mkString(" ", ", ", " ")})"
         override def run(q: SimpleSql[Row])(implicit conn: Connection) = q.executeInsert()
-        override def query = genAWit.to(a).fields.foldLeft(
-                  SQL(s"""
-                        INSERT INTO $table_name ($names_str) VALUES (${names.map(n => s"{$n}").mkString(", ")})
-                  """) : SimpleSql[Row] )( combine_sql )
+        override def query = {
+          genAWit.to(a).fields.map(fix_labelled_sql_repr).foldLeft(
+            SQL(
+              s"""INSERT INTO $table_name ($names_str) VALUES (${names.map(n => s"{$n}").mkString(", ")})"""
+            ): SimpleSql[Row])(combine_sql)
+        }
 
       }
 
       //////**************** UPDATE QUERIES *************
-      override def updateRow[IdType](a: A, id: IdType) = Q[Int] (
-         s"UPDATE $table_name SET ($names_str) = (${
-              genAWit.to(a).values.mkString(" ", ", ", " ")
-            }) WHERE $id_col = $id",
-        (q, conn) => q.executeUpdate()(conn)
-      )
+      override def updateRow[IdType](a: A, id: IdType) = new Q[Int] {
+        override lazy val qstring = s"UPDATE $table_name SET ($names_str) = (${ genAWit.to(a).values.mkString(" ", ", ", " ")}) WHERE $id_col = $id"
+        override def run(q: SimpleSql[Row])(implicit conn: Connection) =  q.executeUpdate()
+        override def query ={
+          genAWit.to(a).fields.map(fix_labelled_sql_repr).foldLeft(
+            SQL(
+              s"""UPDATE $table_name ($names_str) SET ($names_str) = (${names.map(n => s"{$n}").mkString(", ")}) WHERE $id_col = $id """
+            ): SimpleSql[Row])(combine_sql)
+        }
+      }
+
+      override def updateField[T : ToParameterValue : ClassTag](colname: String, newVal: T, rest: String) = new Q[Int] {
+        override lazy val qstring = s"UPDATE $table_name SET ($colname) = (${ fix_sql_repr(newVal).toString }) $rest"
+        override def run(q:SimpleSql[Row])(implicit conn:Connection) = q.executeUpdate
+        override def query = {
+          // wow this is dumb
+          val dlist = TypeCase[List[Double]]
+          val slist = TypeCase[List[String]]
+
+          val fixed : ParameterValue = newVal match {
+            case dlist(l) => fix_sql_repr(l)
+            case slist(l) =>  l.toArray[String]
+            case _ => newVal
+          }
+
+          SQL(s"UPDATE $table_name SET $colname = {col_value} $rest").on("col_value" -> fixed)
+        }
+      }
+
 
       ////******************* DELETE QUERIES *************
-      override def delete(rest: String): Q[Unit] = Q[Unit] (
-        s"DELETE FROM $table_name $rest",
-        (q,conn) => q.execute()(conn)
-      )
+      override def delete(rest: String): Q[Unit] = new Q[Unit] {
+        override lazy val qstring = s"DELETE FROM $table_name $rest"
+        override def run(q: SimpleSql[Row])(implicit conn: Connection) = q.execute()
+      }
     }
   }
 

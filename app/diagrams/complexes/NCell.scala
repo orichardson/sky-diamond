@@ -13,29 +13,30 @@ shapless Diff arithmetic properly, and I also can't name the argument to a succe
 in the type world...
  */
 
-
+import scala.language.higherKinds
 
 trait NCell[NumType, Dim <: Nat] {
   val id : String
 
   type PrevDim <: Nat
+  type CellType[D <: Nat] <: NCell[NumType, D]
+
 
   // keep track internally of all of the things that are built out of me; every time
   // the constructor of a (n+1)-cell is called, update this.
-  var atch: mutable.MutableList[NCell[NumType, Succ[Dim]]] = mutable.MutableList()
+  var atch: mutable.MutableList[CellType[Succ[Dim]]] = mutable.MutableList()
 
   def boundary: Seq[NCell[NumType, PrevDim]]
   def attachments: Seq[NCell[NumType, Succ[Dim]]] = atch
 }
 
 object NCell {
-  trait ZCell[NumType]  { self :  NCell[NumType, _0] =>
+  trait ZCell[NumType] extends NCell[NumType, _0] {
     type PrevDim = Nothing
-
     override def boundary: Seq[NCell[NumType, Nothing]] = Nil
   }
 
-  trait SCell[NumType, PrevD <: Nat] {self : NCell[NumType, Succ[PrevD]]=>
+  trait SCell[NumType, PrevD <: Nat] extends NCell[NumType, Succ[PrevD]] {
     override type PrevDim = PrevD
   }
 }

@@ -1,6 +1,6 @@
 const removeFrom = function(arr, x) {
     let idx = arr.indexOf(x);
-    if (idx > 0) {
+    if (idx >= 0) {
         arr.splice(idx, 1);
         return 1 + removeFrom(arr, x);
     }

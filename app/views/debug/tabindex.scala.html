@@ -1,0 +1,17 @@
+@(tables : List[String])(implicit request: RequestHeader)
+
+@main("debug", show_nav=false) {
+    <div class="container">
+        <h1>List of Tables </h1>
+        <div class="spacer"></div>
+        <p> ( @tables.length of them ) </p>
+
+
+        @for( t <- tables ) {
+            <a href="/debug/table/@t" class="btn btn-info" style="margin:5px">@t</a>
+        }
+    </div>
+
+
+} {
+}

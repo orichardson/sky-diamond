@@ -3,12 +3,14 @@
 @import java.time.Duration
 @import generic.Utils
 
-@(workspaces: Map[Long, WRow])
+@(workspaces: Map[Long, WRow])(implicit request: RequestHeader)
 
 @card(id: Int, w : WRow) = {
     <div class="col-auto mb-3">
         <div class="card text-white bg-dark mb-3" style="width:25rem;">
-            <img class="card-img-top" src="@w.thumburl" alt="Diagram Preview">
+            <div class="card-img-top" alt="Diagram Preview">
+                @w.svgthumb
+            </div>
             <div class="card-body">
                 <h5 class="card-title">@w.name</h5>
                 <p class="card-text">@w.descr</p>

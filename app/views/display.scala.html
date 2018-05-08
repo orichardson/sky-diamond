@@ -1,6 +1,6 @@
-@import dbio.TableWrappers.WRow
+@import diagrams.Workspace
 
-@(w: WRow, diagramID: Long)
+@(w: Workspace)(implicit request: RequestHeader)
 
 @toolButton(name: String, icon:String) = {
     <button class="btn btn-outline-primary tool" id="@name-button" data-tool="@name">
@@ -10,30 +10,37 @@
 }
 
 @actionButton(text: String, icon:String) = {
-    <button class="btn btn-outline-dark"> <i class="fas fa-@icon"></i>  <br/><span class="">@text.capitalize</span></button>
+    <button class="btn btn-outline-dark" id="@text-abutton"> <i class="fas fa-@icon"></i>  <br/><span class="">@text.capitalize</span></button>
 }
 
-@main(w.name) {
+@main(w.row.name) {
 
-    <div class = "container-fluid d-flex flex-column flex-fill">
+    <div class = "container-fluid d-flex flex-column flex-fill noscroll">
         <div class="row"><div class="col-12"></div></div>
-        <div class="row flex-fill" id="inner-container">
+        <div class="row flex-fill noscroll" id="inner-container">
             <div id="left-bar" class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-12 flex-fill d-flex flex-column">
-                <h1 class="overset"> @w.name </h1>
+                <h1 class="overset"> @w.row.name </h1>
 
                 <div style="position:relative;" class="flex-fill d-flex flex-column">
-                    <p class="small text-muted"> @w.descr </p>
+                    <p class="small text-muted"> @w.row.descr </p>
                     <textarea class="console flex-fill"></textarea>
-                    <a class="float-ul"> <i class="fas fa-angle-left"></i></a>
+                    <a class="float-ur"> <i class="fas fa-angle-left"></i></a>
                 </div>
 
             </div>
 
-            <div class="col-xl-10 col-lg-19 col-md-8 col-sm-7 col-12 flex-fill d-flex flex-column lean">
+            <div class="col-xl-10 col-lg-19 col-md-8 col-sm-7 col-12 flex-fill d-flex flex-column lean noscroll">
                 <canvas id="DRAW" resize="true" class="flex-fill"></canvas>
             </div>
 
-            <div id="tools-bar" class="float-ul">
+            <div id="tools-bar" class="float-ur noscroll">
+                <div class="">
+                    <label class="switch">
+                        <input type="checkbox" id="dual_button">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
                 <div class="spacer"></div>
                 <h4>Tools</h4>
                 @toolButton("manual", "mouse-pointer")
@@ -47,7 +54,12 @@
                 <hr/>
                 <div class="spacer"></div>
 
-                @actionButton("save", "save")
+
+                <button class="btn btn-outline-dark" id="save-abutton" style="position:relative;">
+                    <div id="save-loader" class="circle-loader" style="display:none; position:absolute;">
+                    <span id="save-checkmark" class="checkmark draw"></span>
+                </div> <i class="fas fa-save"></i>  <br/><span class="">Save</span></button>
+
                 @actionButton("align", "save")
 
             </div>
@@ -59,15 +71,18 @@
 
 
     <div id="footer" class="fixed-bottom">
-        <div class="btn-toolbar float-right" role="toolbar" aria-label="Toolbar with button groups">
-            <h4>Saved Shapes</h4>
+        <div class="row">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-5 col-0"></div>
+            <div class="col-xl-10 col-lg-9 col-md-8 col-sm-7 col-12" role="toolbar" aria-label="Toolbar with button groups">
+                <h4>Saved Shapes</h4>
 
-            @actionButton("square", "square")
+                @shapelist(w.geom.builtin_shapes)
 
+            </div>
         </div>
     </div>
 }{
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.4/paper-full.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.5/paper-full.js"></script>
     <script type="text/javascript" src="@routes.Assets.at("js/lib/versor.js")"></script>
     <script type="text/javascript" src="@routes.Assets.at("js/lib/C2.js")"></script>
     <script type="text/javascript" src="@routes.Assets.at("js/lib/C3.js")"></script>
@@ -82,6 +97,6 @@
     <script type="text/javascript" src="@routes.Assets.at("js/interface.js")"></script>
 
     <script type="text/javascript">
-        window.diagram_id = @diagramID ; /* this can easily be traced with session ID + sent over */
+        window.wid = @w.wid; /* this can easily be traced with session ID + sent over */
     </script>
 }

@@ -1,9 +1,13 @@
-@(title: String, active:String = "")(content: Html)(scripts : Html = Html(""))
+@import play.filters.csrf.CSRF
+
+@(title: String, active:String = "", show_nav:Boolean =true)(content: Html)(scripts : Html = Html(""))(implicit request: RequestHeader)
 
 <!DOCTYPE html>
 
 <html>
     <head>
+        <meta name="csrf-token" content="@CSRF.getToken.get.value">
+
         <title>@title</title>
 
         <!-------    BOOTSTRAP 4.1 ----->
@@ -20,17 +24,20 @@
 
 
         <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/main.css")" />
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/slidebox.css")" />
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/check_anim.css")" />
 
     </head>
     <body>
         <div id = "outer-container" class="d-flex flex-column">
-
-            @nav(active)
+            @if(show_nav) { @nav(active) }
             @content
         </div>
 
         <script src="https://code.jquery.com/jquery-3.3.1.min.js"
         integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 
         <!--- script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"
             integrity="sha384-cs/chFZiN24E4KMATLdqdvsezGxaGsi4hLGOzlXwp5UZB1LY//20VyM2taTB4QvJ" crossorigin="anonymous"></script--->

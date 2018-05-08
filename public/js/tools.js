@@ -73,24 +73,42 @@
         let eraseTool = (function() {
             let t = new Tool();
 
-            t.onMouseDown = function(event) {
-                for(n in core.points) {
+            let hit_options = {
+                fill: true,
+                stroke: true,
+                segments: true,
+                tolerance: 4,
+                match: hr => ("cell" in hr.item)
+            };
 
+            t.minDistance = 1;
+            function eraseAt(pt) {
+                let hit = paper.project.hitTest(pt, hit_options );
+
+                if(hit) {
+                    hit.item.cell.remove();
                 }
+            }
+
+
+            t.onMouseDown = function(event) {
+                eraseAt(event.point);
             };
 
             t.onMouseDrag = function(event) {
-
+                eraseAt(event.midPoint);
+                eraseAt(event.point);
             };
 
             t.onMouseUp = function(event) {
             };
 
-            tool.onKeyUp = function(event) {
+            t.onKeyUp = function(event) {
             };
-            tool.onKeyDown = function(event) {
+            t.onKeyDown = function(event) {
 
             };
+            return t;
         })();
 
 
@@ -108,16 +126,43 @@
             t.onMouseUp = function(event) {
             };
 
-            tool.onKeyUp = function(event) {
+            t.onKeyUp = function(event) {
             };
-            tool.onKeyDown = function(event) {
+            t.onKeyDown = function(event) {
 
             };
+            return t;
+        })();
+
+        let manualTool = (function() {
+            let t = new Tool();
+
+            var start;
+
+            t.onMouseDown = function(event) {
+                start = event.point;
+            };
+
+            t.onMouseDrag = function(event) {
+
+            };
+
+            t.onMouseUp = function(event) {
+                start = undefined;
+            };
+
+            t.onKeyUp = function(event) {
+            };
+            t.onKeyDown = function(event) {
+
+            };
+            return t;
         })();
 
 
         global.tools = { draw : drawTool,
-            erase : panTool,
+            erase : eraseTool,
+            manual: manualTool,
             dud : new Tool()};
     });
 

@@ -27,6 +27,8 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         core.standard.layer = paper.project.activeLayer;
         core.dual.layer = paper.project.insertLayer(0, new Layer());
 
+        core.evolution_log = [];
+
         core.Geom = versor.create({metric:[1,1]});
 
         // view parameters (will change with viewport updates)
@@ -69,6 +71,15 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         core.colorQ = colorQ;
 
 
+        function default_cell_data(me, opts) {
+            return {dim : me.dim,
+                workspace: window.wid,
+                mag: "",
+                sup: [],
+                sub: [],
+                extrajson: JSON.stringify(opts || {}) }
+        }
+
 
         function toPix(array_of_values) {
             // for now, this projects onto first two dimensions.
@@ -107,11 +118,36 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         core.dual.e = {};
         core.dual.f = {};
 
+        Object.defineProperty(core, 'cells', {
+            get: function() {
+                let toRet = [];
+                var n;
+
+                for ( n in core.points)
+                    toRet.push(core.points[n]);
+
+                for ( n in core.segments)
+                    toRet.push(core.segments[n]);
+
+                for ( n in  core.areas)
+                    toRet.push(core.areas[n]);
+
+                return toRet;
+            }
+        });
+
+
+
         const cell_proto = {
             get name() { return this.data.name; },
             get pos() { return this.data.pos; },
             get sub() { return this.data.sub; },
             get sup() { return this.data.sup; },
+            get flipped() {return this._my_type[this.data.flipped] },
+            set flipped(f) {
+                this.data.flipped = f.name;
+                core.evolution_log.push( {type : "update", name : this.name, dim: this.dim, field: "flipped", data: f.name } )
+            },
 
             neighbors_above : function() {
                 let toReturn = Set([]);
@@ -125,7 +161,36 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             get blade() {
                 if("_blade" in this) return this._blade;
 
+                //todo: actual blades.
                 //return new core.Geom.
+            },
+            remove : function() {
+                if(!(this.name in this._my_type))
+                    return;
+
+                this.path.remove();
+                if(this.ptext)
+                    this.ptext.remove();
+
+                // update connections to things above by removing those things.
+                for( ns of this.sup) {
+                    if(ns in this._sup_type)
+                        this._sup_type[ns].remove();
+                }
+
+                // update connections to things below by removing dependencies.
+                for (ns of this.sub)
+                    if(ns in this._sub_type) {
+                        let ss =this._sub_type[ns];
+                        removeFrom(ss.data.sup, this.name);
+                        core.evolution_log.push({type : "update", name : ns, dim: ss.dim, field: "sup", data: ss.sup.slice() });
+                    }
+
+                core.evolution_log.push({type : "delete", name : this.name, dim: this.dim, old: $.extend({}, this.data) });
+                delete this._my_type[this.name];
+
+                if(this.flipped)
+                    this.flipped.remove();
             }
         };
 
@@ -172,18 +237,15 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             this.data = p;
             this.path = new_dot;
             this.ptext = ptext;
-
-            /*/ for debugging convenience///
-            for(prop in p) {
-                this[prop] = p[prop];
-            }*/
-
+            this.path.cell = this;
+            core.evolution_log.push({type: "new", data:$.extend(default_cell_data(this), p)});
             core.points[p.name] = this;
         }
         Vert.prototype = Object.create(cell_proto, {});
         Vert.prototype._sub_type = [];
         Vert.prototype._my_type = core.points;
         Vert.prototype._sup_type = core.segments;
+        Vert.prototype.dim = 0;
 
         //Object.defineProperty(Vert.prototype, 'z_out', { get: ..., set: ... })
         //todo: extends this to all cell complexes
@@ -256,24 +318,28 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             this.path = path;
 
             this.data = l;
+            this.path.cell = this;
+            core.evolution_log.push({type: "new", data: $.extend(default_cell_data(this, options), l) });
             core.segments[l.name] = this;
         }
         Seg.prototype = Object.create(cell_proto, {});
         Seg.prototype._sub_type = core.points;
         Seg.prototype._my_type = core.segments;
         Seg.prototype._sup_type = core.areas;
+        Seg.prototype.dim = 1;
 
 
 
-        function Area( a, color, options ) {
+        function Area( a, options ) {
             let segs = a.sub;
+            removeFrom(a_namesQ, a.name);
 
-            options = options || {};
+            options = options || { };
             core.standard.layer.activate();
 
             let path = new Path(options);
             path.segments = flatMap(x => core.segments[x].path.segments, segs);
-            path.fillColor = color;
+            path.fillColor = options.color;
             path.opacity = 0.3;
             path.sendToBack();
 
@@ -285,17 +351,20 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                     fontFamily: 'Courier New',
                     fontWeight: 'bold',
                     fontSize: 24,
-                    fillColor: new Color(color).darker(0.5),
+                    fillColor: new Color(options.color).darker(0.5),
                     justification: 'center'
                 };
 
                 this.ptext = ptext;
             }
 
-            this.color = color;
+            this.color = options.color;
             this.path = path;
             this.data = a;
+            this.path.cell = this;
 
+            core.evolution_log.push({type: "new", data:
+                    $.extend(default_cell_data(this, options), a)});
             core.areas[a.name] = this;
         }
 
@@ -303,6 +372,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         Area.prototype._sub_type = core.segments;
         Area.prototype._my_type = core.areas;
         Area.prototype._sup_type = [];
+        Area.prototype.dim = 2;
 
 
         function DualVert ( area ) { // {pos, name, ...dbvars...}
@@ -339,7 +409,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
             this.color = area.color;
             this.path = new_dot;
-
+            this.path.cell = this;
             core.dual.v[area.name] = this;
         }
         DualVert.prototype = Object.create(cell_proto, {
@@ -419,6 +489,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
             path.sendToBack();
             this.path = path;
+            this.path.cell = this;
 
             core.dual.e[l.name] = this;
         }
@@ -456,6 +527,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         };
 
         core.thresh_overlap = dot_size/scale;
+
         core.auto_pt = function ( point ) {
             let worldp = core.fromPix(point);
 
@@ -466,6 +538,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
             let pt = new Vert({
                 pos: worldp,
+                mag : "",
                 name: v_namesQ.pop(),
                 sup: [],
                 sub: [],
@@ -562,7 +635,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 let trail = [ prev_seg ];
 
                 let angle_sum = 0;
-                console.log(prev_seg,at_v.name , oriented_seg.sub[1]);
+                //console.log(prev_seg,at_v.name , oriented_seg.sub[1]);
 
                 while(at_v.name !== oriented_seg.sub[0]) {
                     let bestV = undefined, bestS = undefined, bestB = undefined, best_angle = undefined;
@@ -605,8 +678,8 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             paths.sort( (a,b) => a[1] - b[1]);
 
 
-            console.log("FROM "+p2.name+" TO "+p1.name, paths[0][0].map(x => x  ),
-                paths[0][1], "\nand", paths[1][0].map(x => x),  paths[1][1], '\n\n');
+            //console.log("FROM "+p2.name+" TO "+p1.name, paths[0][0].map(x => x  ),
+            //    paths[0][1], "\nand", paths[1][0].map(x => x),  paths[1][1], '\n\n');
 
             let path = paths[0][0];
             if( path[path.length-1] !== l.name && path[path.length-1] !== l2.name)
@@ -628,16 +701,19 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 blade: [ 1 ],
                 mag: undefined,
                 pos: midpoint
-            },  color);
+            },  {color : color} );
 
             let a2 = new Area({
                 name : "~"+name,
-                sub: segs.slice().reverse().map(s => s.name),
+                sub: segs.slice().reverse().map(s => s.flipped.name),
                 sup: [],
                 blade: [ -1 ],
                 mag: undefined,
                 pos: midpoint
-            },  color, {insert:false});
+            },  {color:color, insert:false});
+
+            a.flipped = a2;
+            a2.flipped = a;
 
 
             segs.forEach( function(s){

@@ -1,0 +1,14 @@
+@import diagrams.complexes.Shape
+
+@(shapes : Seq[Shape])
+
+@shapebutton(s : Shape) = {
+    <button> s.name </button>
+}
+
+
+<div>
+    @for(s <- shapes) {
+        @shapebutton(s)
+    }
+</div>

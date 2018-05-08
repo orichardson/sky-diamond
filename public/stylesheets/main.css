@@ -36,6 +36,11 @@
     position:relative;
 }
 
+.borderless {
+    border-color: #FFFFFF !important;
+    border-radius:50%;
+}
+
 #tools-bar {
     text-align: right;
     padding-right:4px;
@@ -55,10 +60,20 @@
     display:none;
 }
 
-.float-ul {
+.float-ur {
     position: absolute;
     top: 2px;
     right: 2px;
+}
+
+.noscroll {
+    overflow: hidden;
+}
+
+.float-ul {
+    position: absolute;
+    top: 2px;
+    left: 2px;
 }
 
 .lean {
