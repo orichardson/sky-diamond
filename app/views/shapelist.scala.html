@@ -3,7 +3,12 @@
 @(shapes : Seq[Shape])
 
 @shapebutton(s : Shape) = {
-    <button> s.name </button>
+    <a class="btn" draggable="true">
+        <svg width="50" height="35" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            @s.thumbnail
+        </svg>
+        <br/> <span>@s.name </span>
+    </a>
 }
 
 

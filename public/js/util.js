@@ -7,6 +7,15 @@ const removeFrom = function(arr, x) {
     return 0;
 };
 
+const removeWhere = function(arr, f) {
+    let idx = arrx.findIndex(f);
+    if (idx >= 0) {
+        arr.splice(idx, 1);
+        return 1 + removeFrom(arr, x);
+    }
+    return 0;
+};
+
 const flatMap = (f, xs) =>
     xs.map(f).reduce( (x,y) =>  x.concat(y), []);
 

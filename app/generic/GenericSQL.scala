@@ -11,7 +11,6 @@ import shapeless.syntax.singleton._
 import GenericSQL.Q
 import anorm.SimpleSql.SimpleSqlShow
 import anorm.SqlParser.long
-import generic.GenericSQL.fix_sql_repr.at
 import play.Logger
 
 import scala.reflect.ClassTag
@@ -79,9 +78,12 @@ object GenericSQL {
 
   trait base_labelled_arrarify extends base_id_map {
     implicit def caseListOther[T : ClassTag, S <: Symbol] = at[(S, List[T])]( sl => (sl._1,  sl._2.toArray ) )
+    implicit def caseOpt[S <: Symbol, T](implicit ev : Null <:< T) =
+      at[(S, Option[T])]( sl => fix_labelled_sql_repr((sl._1,  sl._2.orNull)))
   }
   object fix_labelled_sql_repr extends base_labelled_arrarify {
     implicit def caseListDouble[S <: Symbol] = at[(S, List[Double])]( sl => (sl._1,  sl._2.map(d => new BoxedReal(d)).toArray ) )
+    implicit def caseOptListDouble[S <: Symbol] = at[(S, Option[List[Double]])]( sl => (sl._1,  sl._2.map(_.map(d => new BoxedReal(d)).toArray ).orNull ) )
   }
 
 
@@ -149,6 +151,9 @@ object GenericSQL {
         override lazy val qstring = s"INSERT INTO $table_name VALUES(${genAWit.to(a).values.mkString(" ", ", ", " ")})"
         override def run(q: SimpleSql[Row])(implicit conn: Connection) = q.executeInsert()
         override def query = {
+          import scala.reflect.runtime.universe.show
+          Logger.debug("the fields: " + show(genAWit.to(a).fields.map(fix_labelled_sql_repr)))
+
           genAWit.to(a).fields.map(fix_labelled_sql_repr).foldLeft(
             SQL(
               s"""INSERT INTO $table_name ($names_str) VALUES (${names.map(n => s"{$n}").mkString(", ")})"""

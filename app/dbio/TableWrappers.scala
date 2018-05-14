@@ -15,14 +15,14 @@ object TableWrappers {
 
   case class CellRow(name: String,
                       dim : Int,
-                      pos: List[Double],
-                      blade: List[Double],
+                      pos: Option[List[Double]]/* = None */,
+                      blade: Option[List[Double]]/* = None*/,
                       mag: String,
-                      sub: List[String],
-                      sup : List[String],
+                      sub: List[String]/* = List()*/,
+                      sup : List[String]/* = List()*/,
                       workspace : Long,
-                      extrajson : String,
-                      flipped : Option[String])
+                      extrajson : String /*= "{}"(*/,
+                      flipped : Option[String] /*= None*/)
 
   case class WRow(name: String,
                   descr: String,
@@ -64,14 +64,14 @@ object TableWrappers {
       field match {
         case "name" =>        csql.updateField(field, data.as[String], rest)
         case "dim" =>         csql.updateField(field, data.as[Int], rest)
-        case "pos" =>         csql.updateField(field, data.as[List[Double]], rest)
-        case "blade" =>       csql.updateField(field, data.as[List[Double]], rest)
+        case "pos" =>         csql.updateField(field, data.asOpt[List[Double]].orNull, rest)
+        case "blade" =>       csql.updateField(field, data.asOpt[List[Double]].orNull, rest)
         case "mag" =>         csql.updateField(field, data.as[String], rest)
         case "sub" =>         csql.updateField(field, data.as[List[String]], rest)
         case "sup" =>         csql.updateField(field, data.as[List[String]], rest)
         case "workspace" =>   csql.updateField(field, data.as[Long], rest)
         case "extrajson" =>   csql.updateField(field, data.as[String], rest)
-        case "flipped" =>     csql.updateField(field, data.asOpt[String], rest)
+        case "flipped" =>     csql.updateField(field, data.asOpt[String].orNull, rest)
       }
     }
 

@@ -11,7 +11,7 @@ class DebugCtrl @Inject()(db: Database, val cc: ControllerComponents)
   extends AbstractController(cc) {
 
   private lazy val w_sql = GenericSQL[WRow].build("Workspaces", "wid", WRow.parser)
-  private lazy val c_sql = GenericSQL[CellRow].build("Cells", "cid", CellRow.parser)
+  private lazy val c_sql : GenericSQL[CellRow] = GenericSQL[CellRow].build("Cells", "cid", CellRow.parser)
 
   def show_table(tabname: String) = Action { implicit request =>
     val rlst = try {

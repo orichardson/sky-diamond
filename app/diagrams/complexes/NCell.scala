@@ -26,14 +26,14 @@ trait NCell[NumType, Dim <: Nat] {
   // the constructor of a (n+1)-cell is called, update this.
   var atch: mutable.MutableList[CellType[Succ[Dim]]] = mutable.MutableList()
 
-  def boundary: Seq[NCell[NumType, PrevDim]]
-  def attachments: Seq[NCell[NumType, Succ[Dim]]] = atch
+  def boundary: Seq[CellType[PrevDim]]
+  def attachments: Seq[CellType[Succ[Dim]]] = atch
 }
 
 object NCell {
   trait ZCell[NumType] extends NCell[NumType, _0] {
     type PrevDim = Nothing
-    override def boundary: Seq[NCell[NumType, Nothing]] = Nil
+    override def boundary: Seq[CellType[PrevDim]] = Nil
   }
 
   trait SCell[NumType, PrevD <: Nat] extends NCell[NumType, Succ[PrevD]] {

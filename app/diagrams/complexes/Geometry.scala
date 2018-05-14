@@ -1,9 +1,13 @@
 package diagrams.complexes
 
+import dbio.TableWrappers
+import dbio.TableWrappers.CellRow
 import diagrams.algebra.NVector
+import diagrams.complexes.Geometry.R2
 import diagrams.complexes.NCell.{SCell, ZCell}
 import shapeless.Nat.{_0, _1, _2}
-import shapeless.ops.nat.Diff
+import shapeless.ops.nat.{Diff, ToInt}
+import shapeless.ops.nat.Diff.Aux
 import shapeless.{Nat, Succ, syntax}
 import spire.syntax.ring._
 import spire.implicits._
@@ -20,7 +24,10 @@ trait Geometry[N, MD <: Nat] {
 
   def builtin_shapes : Seq[Shape]
 
-  def create_point(id: String, position: Seq[NumType]) : GeoCell[NumType, _0, MaxDim]
+  def dual[Dim <: Nat, ReverseDim <: Nat] (cell: GeoCell[NumType, Dim, MaxDim])
+                        (implicit ev : Diff.Aux[MaxDim, Dim, ReverseDim]) : GeoCell[NumType, ReverseDim, MaxDim]
+
+  def create_point(id: String, position: IndexedSeq[NumType]) : GeoCell[NumType, _0, MaxDim]
   def create_cell[PrevDim <: Nat]( id : String, boundary: Seq[GeoCell[NumType, PrevDim, MaxDim]]) : GeoCell[NumType, Succ[PrevDim], MaxDim]
 }
 
@@ -29,32 +36,36 @@ trait Geometry[N, MD <: Nat] {
 
 object Geometry {
   object R2 extends Geometry[Double, _2] {
+    /* These are to make the rest of the method more readable */
+    type Pnt = GeoCell[Double, _0, _2]
+    type Seg = GeoCell[Double, _1, _2]
+    type Face = GeoCell[Double, _2, _2]
+
+
     override def builtin_shapes : Seq[Shape] = {
-      Seq()
+      Seq(Shape.rect[Double])
     }
 
-    override def create_point(idd: String, pos: Seq[Double]): GeoCell[Double, _0, _2] = new GeoCell[Double, _0, _2] with ZCell[Double] {
+    override def create_point(idd: String, pos: IndexedSeq[Double]): Pnt = new Pnt with ZCell[Double] {
       override val id = idd
       override def magnitude = 1
-      override def position : Seq[Double] = pos
-      override def direction = Blade.empty
-      override def dual[ReverseDim <: Nat](implicit ev: Diff.Aux[_2, _0, ReverseDim]) : GeoCell[Double, ReverseDim, _2] = ???
+      override def position = Some(pos)
+      override def direction = None
         //create_cell( "DUAL"+id, sup.map(g => g.dual) )//sup.map(g => g.dual)
+
     }
 
-    override def create_cell[PrevDim <: Nat](idd: String, boundary: Seq[GeoCell[Double, PrevDim, _2]]) : GeoCell[Double, Succ[PrevDim],_2]  =
+    override def create_cell[PrevDim <: Nat](idd: String, border: Seq[GeoCell[Double, PrevDim, _2]]) : GeoCell[Double, Succ[PrevDim],_2]  =
         new GeoCell[Double, Succ[PrevDim],_2] with SCell[Double, PrevDim] {
       override val id = idd
       override def magnitude = ???
-      override def position = ???
+      override def position = None
       override def direction = ???
-
-      override def boundary = ???
-      override def dual[ReverseDim <: Nat](implicit ev: Diff.Aux[_2, Succ[PrevDim], ReverseDim]) = ???
-
-
-//      override def dual[ReverseDim <: Nat](implicit ev: Aux[_2, Succ[PrevDim], ReverseDim]) = ???
+      override def boundary = border
     }
+
+    override def dual[Dim <: Nat, ReverseDim <: Nat](cell: GeoCell[Double, Dim, R2.MaxDim])
+                                                    (implicit ev: Aux[R2.MaxDim, Dim, ReverseDim]): GeoCell[R2.NumType, ReverseDim, R2.MaxDim] = ???
   }
 
 
@@ -101,11 +112,8 @@ object Geometry {
 
   }*/
 
-  val test = 3
   def lookup (name : String) : Geometry[_,_ <: Nat] = name match {
     case "R2" => R2
   }
-
-  def test2(i : Int) : Int = i
 
 }

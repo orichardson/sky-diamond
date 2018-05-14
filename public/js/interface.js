@@ -54,54 +54,68 @@ $(function() {
     tools.draw.activate();
     $('#draw-button').click();
 
+    function mkAction(btn_selector, promise) {
+        $(btn_selector).click( function() {
+            let $this = $(this)
+            let $cl = $this.find('.circle-loader');
+            if ($this.is(":disabled"))
+                return;
 
-    $('#save-abutton').click(function () {
-        let $this = $(this);
-        let $cl = $('.circle-loader');
-        if($this.is(":disabled"))
-            return;
+            let token = $('meta[name="csrf-token"]').attr('content');
+            $this.find('svg').hide();
+            $this.find('span.action-label').addClass("moved", 300);
+            $this.prop('disabled', true).addClass('borderless', 200);
+            $cl.removeClass('load-complete');
+            $cl.show();
 
-        console.log(core.evolution_log);
-        let token = $('meta[name="csrf-token"]').attr('content');
+            function reset(kind) {
+                $this.delay(2100).removeClass('borderless', 500).queue(function () {
+                    $this.prop('disabled', false);
+                    $this.find('svg').show();
 
-        $this.prop('disabled', true).addClass('borderless');
-        $cl.show();
+                    $(this).dequeue();
+                });
+                $this.addClass('rslt-' + kind);
 
-        $.ajax({
-            url: '/w/'+wid+'/evolve',
+
+                $cl.delay(500, "classes").queue("classes", function () {
+                    $cl.addClass('load-complete');
+                    $this.find('.markspan').show();
+                    $(this).dequeue("classes");
+                }).delay(1800, "classes").queue("classes", function () {
+                    $this.find('.markspan').hide();
+                    $this.removeClass('rslt-' + kind);
+                    $cl.fadeOut(200);
+                    $this.find('span.action-label').removeClass("moved", 300);
+                    $(this).dequeue("classes");
+                }).dequeue('classes');//.removeClass('load-complete', 0);
+            }
+
+            promise(token).done(function (data) {
+                //$('#save-abutton').
+                core.evolution_log.length = 0;
+                reset('check');
+            }).fail(function (err, a, b) {
+                reset('cross');
+            }).always(function () {
+            });
+        });
+    }
+
+
+    mkAction('.btn-outline-dark', function(token) {
+        return $.ajax({
+            url: '/w/' + wid + '/evolve',
             type: 'POST',
-            contentType : 'application/json',
+            contentType: 'application/json',
             beforeSend: function (xhr) {
                 //xhr.setRequestHeader('X-CSRF-Token', token);
                 xhr.setRequestHeader('Csrf-Token', token);
             },
-            data : JSON.stringify(core.evolution_log)
-        }).done(function(data) {
-            //$('#save-abutton').
-            core.evolution_log.length = 0;
-
-            $this.delay(1200).removeClass('borderless',500).queue(function() {
-                $this.prop('disabled', false);
-                $cl.hide();
-                $('.checkmark').hide();
-                $( this ).dequeue();
-            });
-
-
-            $cl.delay( 500).queue("classes", function(){
-                $cl.addClass('load-complete');
-                console.log("YO");
-                $('.checkmark').show();
-                $(this).dequeue("classes");
-            }).delay(1800).queue("classes", function(){
-                $(this).dequeue("classes");
-            }).dequeue('classes');//.removeClass('load-complete', 0);//.fadeOut(300)
-            //$('.checkmark').show().delay(1800);//.fadeOut(100);
-
-        }).fail(function(err, a, b) {
-            console.log("FAILURE", err, a, b)
-        }).always( function() { });
+            data: JSON.stringify(core.evolution_log)
+        })
     });
+
 
 
     function onFrame(event) {

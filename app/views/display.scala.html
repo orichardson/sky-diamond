@@ -2,6 +2,11 @@
 
 @(w: Workspace)(implicit request: RequestHeader)
 
+@inhead = {
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/check_anim.css")" />
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/display.css")" />
+}
+
 @toolButton(name: String, icon:String) = {
     <button class="btn btn-outline-primary tool" id="@name-button" data-tool="@name">
         &nbsp;<i class="fas fa-@icon"></i> <br/>
@@ -10,11 +15,14 @@
 }
 
 @actionButton(text: String, icon:String) = {
-    <button class="btn btn-outline-dark" id="@text-abutton"> <i class="fas fa-@icon"></i>  <br/><span class="">@text.capitalize</span></button>
+
+    <button class="btn btn-outline-dark" id="@text-abutton" style="position:relative;">
+        <div id="@text-loader" class="circle-loader" style="display:none; position:absolute;">
+            <span id="@text-markspan" class="markspan draw"></span>
+        </div> <i class="fas fa-@icon"></i>  <br/><span class="action-label">@text.capitalize</span></button>
 }
 
-@main(w.row.name) {
-
+@main(w.row.name, in_head=inhead) {
     <div class = "container-fluid d-flex flex-column flex-fill noscroll">
         <div class="row"><div class="col-12"></div></div>
         <div class="row flex-fill noscroll" id="inner-container">
@@ -55,12 +63,9 @@
                 <div class="spacer"></div>
 
 
-                <button class="btn btn-outline-dark" id="save-abutton" style="position:relative;">
-                    <div id="save-loader" class="circle-loader" style="display:none; position:absolute;">
-                    <span id="save-checkmark" class="checkmark draw"></span>
-                </div> <i class="fas fa-save"></i>  <br/><span class="">Save</span></button>
 
-                @actionButton("align", "save")
+                @actionButton("save", "save")
+                @actionButton("align", "th-large")
 
             </div>
         </div>

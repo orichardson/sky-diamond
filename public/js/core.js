@@ -54,8 +54,9 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
 
         //////////// colors
-        let colors_predef = ['red', 'blue', 'green', '#FF7F50', 'Aquamarine'
-        ];
+        //let colors_predef = ['red', 'blue', 'green', '#FF7F50', 'Aquamarine' ];
+        let colors_predef = ['#1b322a','#326659','#84b6ab','#c5e786','#ebe7ca','#de7c55'];
+
 
         let colorQ = {
             pop: function() {
@@ -139,16 +140,20 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
 
         const cell_proto = {
+            dset : function(key, val) { this.data[key] = val; this.log_changes(key); },
             get name() { return this.data.name; },
             get pos() { return this.data.pos; },
             get sub() { return this.data.sub; },
             get sup() { return this.data.sup; },
             get flipped() {return this._my_type[this.data.flipped] },
-            set flipped(f) {
-                this.data.flipped = f.name;
-                core.evolution_log.push( {type : "update", name : this.name, dim: this.dim, field: "flipped", data: f.name } )
-            },
+            set flipped(f) { this.dset('flipped', f.name); },
 
+            get blade() {
+                if("_blade" in this) return this._blade;
+
+                //todo: actual blades.
+                //return new core.Geom.
+            },
             neighbors_above : function() {
                 let toReturn = Set([]);
 
@@ -158,12 +163,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
                 return toReturn;
             },
-            get blade() {
-                if("_blade" in this) return this._blade;
 
-                //todo: actual blades.
-                //return new core.Geom.
-            },
             remove : function() {
                 if(!(this.name in this._my_type))
                     return;
@@ -181,9 +181,10 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 // update connections to things below by removing dependencies.
                 for (ns of this.sub)
                     if(ns in this._sub_type) {
-                        let ss =this._sub_type[ns];
+                        let ss = this._sub_type[ns];
                         removeFrom(ss.data.sup, this.name);
-                        core.evolution_log.push({type : "update", name : ns, dim: ss.dim, field: "sup", data: ss.sup.slice() });
+                        ss.log_changes("sup");
+                        //core.evolution_log.push({type : "update", name : ns, dim: ss.dim, field: "sup", data: ss.sup.slice() });
                     }
 
                 core.evolution_log.push({type : "delete", name : this.name, dim: this.dim, old: $.extend({}, this.data) });
@@ -191,6 +192,20 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
                 if(this.flipped)
                     this.flipped.remove();
+            },
+            log_changes : function (fields) {/* assume fields are sent as varargs */
+                let n = this.name; let d = this.dim;
+                let datacopy =  $.extend(true, {}, this.data);
+
+                if(arguments.length === 0) {
+                    // no arguments => we wanted to update the whole row
+                    // compression:
+                    removeWhere(core.evolution_log, e => (e.name === n && e.dim === d));
+                    core.evolution_log.push( {type : "overwrite", name: n, dim : d, data:datacopy} )
+                } else {
+                    for(f of arguments)
+                        core.evolution_log.push({type: "update", name: n, dim: d, field: f, data: datacopy[f] })
+                }
             }
         };
 
@@ -333,6 +348,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         function Area( a, options ) {
             let segs = a.sub;
             removeFrom(a_namesQ, a.name);
+            removeFrom(colors_predef, options.color);
 
             options = options || { };
             core.standard.layer.activate();
@@ -619,10 +635,10 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
             l.flipped = l2;
             l2.flipped = l;
 
-            p1.data.sup.push(l.name);
-            p1.data.sup.push(l2.name);
-            p2.data.sup.push(l.name);
-            p2.data.sup.push(l2.name);
+            [p1,p2].forEach( function(pi) {
+                pi.data.sup.push(l.name, l2.name);
+                pi.log_changes('sup')
+            });
 
             // determine if we made an area, and if so, add it
             // trace with + and - angle. Each has to be in the same plane as its predecessors.
@@ -635,11 +651,17 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                 let trail = [ prev_seg ];
 
                 let angle_sum = 0;
+
+                var limit = 200;
                 //console.log(prev_seg,at_v.name , oriented_seg.sub[1]);
 
                 while(at_v.name !== oriented_seg.sub[0]) {
                     let bestV = undefined, bestS = undefined, bestB = undefined, best_angle = undefined;
                     //console.log("\n\nAT: "+at_v.name+" (looking for "+oriented_seg.sub[0]+")");
+
+                    limit -= 1;
+                    if( limit <= 0)
+                        return [prev_seg, 0];
 
                     for ([n, b, s] of at_v.z_out(/*{exclude: prev_seg}*/)) {
                         //TODO: fix this so it works for not just 2D
