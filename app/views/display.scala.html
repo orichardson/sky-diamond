@@ -1,11 +1,11 @@
 @import diagrams.Workspace
+@import views.Collector
+@import helpers.main
+@import helpers.nav
 
-@(w: Workspace)(implicit request: RequestHeader)
+@(w: Workspace, collector: Collector = new Collector())(implicit request: RequestHeader)
 
-@inhead = {
-    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/check_anim.css")" />
-    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/display.css")" />
-}
+@***************** Helper functions *********@
 
 @toolButton(name: String, icon:String) = {
     <button class="btn btn-outline-primary tool" id="@name-button" data-tool="@name">
@@ -15,14 +15,41 @@
 }
 
 @actionButton(text: String, icon:String) = {
-
     <button class="btn btn-outline-dark" id="@text-abutton" style="position:relative;">
         <div id="@text-loader" class="circle-loader" style="display:none; position:absolute;">
             <span id="@text-markspan" class="markspan draw"></span>
         </div> <i class="fas fa-@icon"></i>  <br/><span class="action-label">@text.capitalize</span></button>
 }
 
-@main(w.row.name, in_head=inhead) {
+@********************* REGISTER TAGS that go elsewhere ************************@
+
+@collector.nav( nav("") )
+@collector.css {
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/check_anim.css")" />
+    <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/display.css")" />
+}
+
+@collector.scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.5/paper-full.js"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/versor.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/C2.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/lib/C3.js")"></script>
+
+
+    <script type="text/javascript" src="@routes.Assets.at("js/util.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/maths.js")"></script>
+        <!--    load core.js as first paper module (but after paper.js, util and maths)  -->
+    <script type="text/javascript" src="@routes.Assets.at("js/core.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("js/tools.js")"></script>
+        <!--    load interface.js last -->
+    <script type="text/javascript" src="@routes.Assets.at("js/interface.js")"></script>
+
+    <script type="text/javascript">
+            window.wid = @w.wid; /* this can easily be traced with session ID + sent over */
+    </script>
+}
+
+@main(w.row.name, collector) {
     <div class = "container-fluid d-flex flex-column flex-fill noscroll">
         <div class="row"><div class="col-12"></div></div>
         <div class="row flex-fill noscroll" id="inner-container">
@@ -55,7 +82,7 @@
                 @toolButton("draw", "pencil-alt")
                 @toolButton("erase", "eraser")
                 @toolButton("move", "arrows-alt")
-                @toolButton("manual", "mouse-pointer")
+                @* @toolButton("manual", "mouse-pointer") *@
                 @toolButton("view", "eye")
 
 
@@ -81,27 +108,9 @@
             <div class="col-xl-10 col-lg-9 col-md-8 col-sm-7 col-12" role="toolbar" aria-label="Toolbar with button groups">
                 <h4>Saved Shapes</h4>
 
-                @shapelist(w.geom.builtin_shapes)
+                @helpers.shapelist(w.geom.builtin_shapes, collector)
 
             </div>
         </div>
     </div>
-}{
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.11.5/paper-full.js"></script>
-    <script type="text/javascript" src="@routes.Assets.at("js/lib/versor.js")"></script>
-    <script type="text/javascript" src="@routes.Assets.at("js/lib/C2.js")"></script>
-    <script type="text/javascript" src="@routes.Assets.at("js/lib/C3.js")"></script>
-
-
-    <script type="text/javascript" src="@routes.Assets.at("js/util.js")"></script>
-    <script type="text/javascript" src="@routes.Assets.at("js/maths.js")"></script>
-    <!--    load core.js as first paper module (but after paper.js, util and maths)  -->
-    <script type="text/javascript" src="@routes.Assets.at("js/core.js")"></script>
-    <script type="text/javascript" src="@routes.Assets.at("js/tools.js")"></script>
-    <!--    load interface.js last -->
-    <script type="text/javascript" src="@routes.Assets.at("js/interface.js")"></script>
-
-    <script type="text/javascript">
-        window.wid = @w.wid; /* this can easily be traced with session ID + sent over */
-    </script>
 }

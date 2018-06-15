@@ -1,6 +1,6 @@
 package controllers
 
-import dbio.TableWrappers.{CellRow, WRow}
+import io.TableWrappers.{CellRow, WRow}
 import generic.GenericSQL
 import anorm._
 import javax.inject.Inject

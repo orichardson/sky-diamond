@@ -1,6 +1,7 @@
 @import play.filters.csrf.CSRF
+@import views.Collector
 
-@(title: String, active:String = "", show_nav:Boolean =true, in_head : Html = Html(""))(content: Html)(scripts : Html = Html(""))(implicit request: RequestHeader)
+@(title: String, collector: Collector)(content: Html)(implicit request: RequestHeader)
 
 <!DOCTYPE html>
 
@@ -23,13 +24,14 @@
 
 
 
-        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/main.css")" />
-        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("stylesheets/slidebox.css")" />
-        @in_head
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("/stylesheets/main.css")" />
+        <link rel="stylesheet" type="text/css" href="@routes.Assets.at("/stylesheets/slidebox.css")" />
+        @collector.unravel("css")
+
     </head>
     <body>
         <div id = "outer-container" class="d-flex flex-column">
-            @if(show_nav) { @nav(active) }
+            @collector.unravel("nav")
             @content
         </div>
 
@@ -43,7 +45,8 @@
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"
             integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
 
-        @scripts
+        @collector.unravel("scripts")
+        @collector.unravel("end_scripts")
 
         <!------- FONT AWESOME JS ----------->
         <script src="https://use.fontawesome.com/releases/v5.0.10/js/all.js"

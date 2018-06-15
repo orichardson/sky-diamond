@@ -1,6 +1,6 @@
 package diagrams
 
-import dbio.TableWrappers.WRow
+import io.TableWrappers.WRow
 import diagrams.complexes.{Blade, Geometry, Shape}
 import shapeless.Nat
 import shapeless.ops.nat.LT
@@ -12,11 +12,11 @@ trait Workspace {
   val wid : Long
   def row : WRow
   val geom : Geometry[NumType, MaxDim]
-  def blades: Map[Int, List[Blade[NumType]]]
+  def blades: Map[Int, List[Blade[NumType, _ , MaxDim]]]
 }
 
 object Workspace {
-  def from ( id: Long, wrow: WRow, already: List[Blade[_]] ) : Workspace = {
+  def from ( id: Long, wrow: WRow, already: List[Blade[_, _, _]] ) : Workspace = {
     val found_geom  = Geometry.lookup(wrow.geometry)
 
     type NT = found_geom.NumType
@@ -31,7 +31,7 @@ object Workspace {
       override val geom : Geometry[NT, MD] = found_geom.asInstanceOf[Geometry[NT, MD]]
 
       override def blades = {
-        already.asInstanceOf[List[Blade[NT]]].groupBy(b => b.dim)
+        already.asInstanceOf[List[Blade[NT, _,  MD]]].groupBy(b => b.dim)
       }
     }
   }

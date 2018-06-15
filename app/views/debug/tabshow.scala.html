@@ -1,12 +1,40 @@
-@(tname: String, cols: List[String], table: List[List[String]])(implicit request: RequestHeader)
+@import views.Collector
+@import helpers.main
 
-@main("debug", show_nav=false) {
+@(tname: String, cols: List[String], table: List[List[String]], collector : Collector = new Collector())(implicit request: RequestHeader)
+
+@collector.scripts {
+    <script type="text/javascript" src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+
+    <script >
+            $(function() {
+                $('table').DataTable({
+                    "scrollX": true,
+                    columnDefs: [ {
+                        targets: "_all",
+                        render: function ( data, type, row ) {
+                            return data.substr( 0, 200 );
+                        }
+                    } ]
+
+                } );
+            });
+    </script>
+}
+
+@collector.css {
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.css">
+}
+
+
+
+@main("debug", collector) {
     <h1>Table: @tname </h1>
     <div class="spacer"></div>
     <p> ( @cols.length columns, and @table.length rows) </p>
     <div class="float-ur"><a href="/debug/tables" class="btn btn-info">List of Tables</a></div>
-    <table class="table">
-        <thead class="thead-dark">
+    <table class="display">
+        <thead class="">
             <tr>
                 <th scope="col">#</th>
 
@@ -26,5 +54,4 @@
             }
         </tbody>
     </table>
-} {
 }

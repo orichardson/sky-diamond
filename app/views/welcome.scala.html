@@ -1,15 +1,51 @@
-@import dbio.TableWrappers.WRow
+@import io.TableWrappers.WRow
 @import java.time.Instant
 @import java.time.Duration
 @import generic.Utils
+@import views.Collector
+@import helpers.{nav, main}
 
-@(workspaces: Map[Long, WRow])(implicit request: RequestHeader)
+@(workspaces: Map[Long, WRow], collector: Collector = new Collector())(implicit request: RequestHeader)
+
+@collector.nav(nav(active = "home"))
+@collector.script {
+    <script>
+        $(function() {
+            var $wn = $('#wn-input')
+            $wn.keypress(function() {
+                $wn.removeClass('border border-danger');
+            })
+
+            $("#create").click(function() {
+                let n =  $wn.val();
+                let d =  $('#wd-area').val();
+                let g = $('#geom-select').val();
+
+                if(!n) {
+                    $wn.addClass('border border-danger');
+                } else {
+                    $.get('/w/new', {name: n, descr: d, geom: g})
+                        .done(function (data) {
+                                window.location.href = '/w/' + data+ "/";
+                            }
+                        )
+                }
+            });
+
+            $("#load").click(function() {
+                $.get('/').done(function(data) {
+                    console.log(data)
+                })
+            })
+        })
+    </script>
+}
 
 @card(id: Int, w : WRow) = {
     <div class="col-auto mb-3">
         <div class="card text-white bg-dark mb-3" style="width:25rem;">
             <div class="card-img-top" alt="Diagram Preview">
-                @w.svgthumb
+                  @Html(w.svgthumb)
             </div>
             <div class="card-body">
                 <h5 class="card-title">@w.name</h5>
@@ -23,7 +59,7 @@
     </div>
 }
 
-@main("Welcome", active="home") {
+@main("Welcome", collector) {
     <div class = "container-fluid d-flex flex-column flex-fill">
         <div class="row">
             <div class="container">
@@ -44,21 +80,21 @@
                 <div class="spacer"></div>
 
                 <div class="row">
-                    <div class="col-xs-10 col-sm-9 col-md-7 col-lg-6">
+                    <div class="col-xs-10 col-sm-9 col-md-8 col-lg-7">
                         <div class="row">
-                            <div class="col-12 col-md-7">
+                            <div class="col-12 col-md-6">
                                 <input id="wn-input" type="text" class="form-control minimal" placeholder="Name" aria-label="Workspace Name" >
                             </div>
-                            <div class="col-12 col-md-5">
-                                <div class="input-group mb-3">
+                            <div class="col-12 col-md-6">
+                                <div class="input-group mb-5">
                                     <div class="input-group-prepend">
-                                        <label class="input-group-text" for="inputGroupSelect01">Options</label>
+                                        <label class="input-group-text" for="inputGroupSelect01"><span class="small">Geometry</span></label>
                                     </div>
-                                    <select class="custom-select" id="inputGroupSelect01">
-                                        <option selected>Choose...</option>
-                                        <option value="E2">2D Euclidean</option>
-                                        <option value="C2">Two</option>
-                                        <option value="E3">Three</option>
+                                    <select class="custom-select" id="geom-select">
+                                        <option value="R2">2D Euclidean</option>
+                                        <option value="S2">2D Square Lattice</option>
+                                        <option value="T2">2D Triangular Lattice</option>
+                                        <option value="E3">3D Euclidean </option>
                                     </select>
                                 </div>
                             </div>
@@ -93,34 +129,4 @@
             </div>
         </div>
     </div>
-} {
-    <script>
-        $(function() {
-            var $wn = $('#wn-input')
-            $wn.keypress(function() {
-                $wn.removeClass('border border-danger');
-            })
-
-            $("#create").click(function() {
-                var n =  $wn.val();
-                var d =  $('#wd-area').val();
-
-                if(!n) {
-                    $wn.addClass('border border-danger');
-                } else {
-                    $.get('/w/new', {name: n, descr: d})
-                        .done(function (data) {
-                            window.location.href = '/w/' + data+ "/";
-                         }
-                    )
-                }
-            });
-
-            $("#load").click(function() {
-                $.get('/').done(function(data) {
-                    console.log(data)
-                })
-            })
-        })
-    </script>
 }

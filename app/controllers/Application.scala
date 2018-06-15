@@ -6,12 +6,15 @@ import java.time.Instant
 import generic.GenericSQL
 import javax.inject.Inject
 import play.api.db.Database
-import dbio.TableWrappers._
+import io.TableWrappers._
 import play.api.mvc.{AbstractController, Action, ControllerComponents}
 import play.api.libs.json.{JsValue, Json, Reads, Writes}
 import anorm._
 import play.api.Logger
 import diagrams.Workspace
+import diagrams.complexes.Geometry
+import io.CellJS
+import play.twirl.api.Html
 
 class Application  @Inject()(db: Database, val cc: ControllerComponents)
   extends AbstractController(cc) {
@@ -100,6 +103,22 @@ class Application  @Inject()(db: Database, val cc: ControllerComponents)
     }
 
     Ok(results.mkString(" \t "))
+  }
+
+  def update_preview(wid : Long) = Action { request =>
+    val newthumb : String = request.body.asText.getOrElse("~")
+
+    val rslt = db.withConnection { implicit c => w_sql.updateField("svgthumb", newthumb, s" WHERE wid = '$wid'").go }
+    Ok(rslt + "")
+  }
+
+  def shape = Action { request =>
+    val name: String = request.getQueryString("name").get
+    val geom: String = request.getQueryString("geom").get
+
+    val ideal : List[CellJS] = Geometry.lookup(geom).builtin_shapes.find( s  => s.name == name).get.toJSCells
+
+    Ok(Json.toJson(ideal))
   }
 
 }

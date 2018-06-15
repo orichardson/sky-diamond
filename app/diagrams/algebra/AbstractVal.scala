@@ -12,7 +12,7 @@ abstract class AbstractVal[T] (implicit tring: CRing[T]) {
   val poly : Multinomial[T]
 
   def apply(feed: Label[T] => T) : T =
-    (poly map tupled { (m: Monomial[T], coef : T) =>  coef * eval( m, feed) }) .reduce( tring.plus )
+    (poly map tupled { (m: Monomial[T], coef : T) =>  coef * eval( m, feed) }) .foldLeft(tring.zero)( tring.plus )
 
   override def toString: String = (poly.toSeq.sortBy( _._1.values.sum ) map tupled {
     (m : Monomial[T], c: T) => "("+c.toString +") "+
@@ -22,18 +22,32 @@ abstract class AbstractVal[T] (implicit tring: CRing[T]) {
 
 
 
-object AbstractVal {
+object AbstractVal { outer =>
 
   case class Label[T](name : String)(implicit num : CRing[T]) extends AbstractVal[T] {
     // actually don't need the implicit, just an identity but I'm hurried so I'll fix it later.
     override val poly: Map[Monomial[T], T] = Map(Map(this -> 1) -> num.one)
   }
 
-  class AbsRing[T](implicit tring : CRing[T]) extends CRing[AbstractVal[T]] {
+  type Monomial[T] = Map[Label[T], Int] // maps labels to exponents
+  type Multinomial[T] = Map[Monomial[T], T] // maps monomials to coefficients.
+
+  /*implicit class Parser(val sc: StringContext) extends AnyVal {
+    def abstr[T](args: Any*): Label[T] = new Label(sc.parts);
+  }*/
+
+  implicit def str2AV[T](name : String)(implicit num : CRing[T]) : AbstractVal[T] = Label[T](name)
+  implicit def nt2AV[T] (t : T)(implicit num : CRing[T]) : AbstractVal[T] = AbstractVal[T](Map(Map[Label[T], Int]() -> t))
+
+
+  def zero[T](implicit tring : CRing[T]): AbstractVal[T] = AbstractVal[T](Map())
+  def  one[T](implicit tring : CRing[T]): AbstractVal[T] = nt2AV[T](tring.one)
+
+  implicit def absRing[T](implicit tring : CRing[T]) : CRing[AbstractVal[T]] = new CRing[AbstractVal[T]] {
     override def negate(x: AbstractVal[T]) = AbstractVal(x.poly.mapValues(tring.negate))
 
-    override val zero: AbstractVal[T] = AbstractVal[T](Map())
-    override val one: AbstractVal[T] = AbstractVal(Map(Map(Label("x") -> 0) -> tring.one))
+    override val zero: AbstractVal[T]  = outer.zero
+    override val one: AbstractVal[T] = outer.one
 
     override def plus(x: AbstractVal[T], y: AbstractVal[T]): AbstractVal[T] =
       merge(x.poly, y.poly, tring.plus, tring.zero).filter(_._2 != 0)
@@ -41,17 +55,8 @@ object AbstractVal {
     override def times(x: AbstractVal[T], y: AbstractVal[T]): AbstractVal[T] = {
       for ((mx, coef_x) <- x; (my, coef_y) <- y) yield
         AbstractVal[T](Map(merge(mx, my, (_: Int) + (_: Int), 0) -> coef_x * coef_y ))
-    }.reduce( plus ).filter(_._2 != 0)
+    }.foldLeft( zero )( plus ).filter(_._2 != 0)
   }
-
-  object AbsRing {
-    def apply[T](implicit tring : CRing[T]) = new AbsRing[T]
-    implicit def getRing[T](implicit tring : CRing[T]) : CRing[AbstractVal[T]] = new AbsRing[T]
-  }
-
-
-  type Monomial[T] = Map[Label[T], Int] // maps labels to exponents
-  type Multinomial[T] = Map[Monomial[T], T]
 
 
   def parse[T] (s : String)(implicit tring: CRing[T]): AbstractVal[T] = AbstractVal[T] ({
@@ -78,7 +83,7 @@ object AbstractVal {
     (m1.keySet | m2.keySet).iterator.map( k => k -> combine(m1.getOrElse(k, if_missing), m2.getOrElse(k, if_missing))).toMap
 
   def eval[T]( m: Monomial[T], feed: Label[T] => T )(implicit tring : CRing[T]) : T =
-    (m map tupled { (label, power) => feed(label) ** power }).reduce( tring.times )
+    (m map tupled { (label, power) => feed(label) ** power }).foldLeft( tring.one) ( tring.times )
 
   def apply[T : CRing] (m: Multinomial[T]) : AbstractVal[T] = new AbstractVal[T] { override val poly = m }
 

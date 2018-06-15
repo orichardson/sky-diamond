@@ -1,0 +1,73 @@
+@import diagrams.complexes.Shape
+@import views.Collector
+@import play.api.libs.json.Json
+
+@(shapes : Seq[Shape], collector: Collector)
+
+@shapebutton(s : Shape) = {
+    <a id="shapeb-@s.name" class="btn shape-template" draggable="true">
+        <svg width="50" height="35" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+            @s.thumbnail
+        </svg>
+        <br/> <span>@s.name </span>
+    </a>
+}
+
+
+<div id="shape-tray">
+    @for(s <- shapes) {
+        @shapebutton(s)
+    }
+</div>
+
+
+@collector.end_scripts {
+    <script type="text/javascript"> (function(global) {
+        $(function () {
+            global.shapes = {};
+            var sname;
+            @for(s <- shapes) {
+                sname = "@s.name";
+                global.shapes[sname] = {
+                    params : @{Html(Json.toJson(s.params.map(_.name)).toString())},
+
+                    make : function() {
+                        //todo: fix geometry.
+                        $.get('/s/shape', {name: sname, geom: "R2" }).done(function(data) {
+                            console.log(data)
+                        });
+                    }
+                };
+            }
+
+
+            let $tray = $('#shape-tray'), $canv = $('canvas');
+
+            $(".shape-template", $tray).draggable({
+                cancel: "a.ui-icon", // clicking an icon won't initiate dragging
+                revert: "invalid", // when not dropped, the item will revert back to its initial position
+                containment: "document",
+                helper: "clone",
+                cursor: "move"
+            });
+
+            $canv.droppable({
+                accept: "#shape-tray > .shape-template",
+                classes: {
+                    "ui-droppable-active": "ui-state-highlight"
+                },
+                drop: function (event, ui) {
+                    console.log("event", event); // useful : event.pageX, event.pageY.
+                    console.log('ui', ui);
+                    // $canv.css({'background-color': '#CCA;'})
+
+                    window.ui = ui;
+
+
+                    shapes[ui.draggable.attr('id').replace("shapeb-", "")].make();
+                }
+            });
+        });
+    })(this);
+    </script>
+}

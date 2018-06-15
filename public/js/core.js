@@ -33,8 +33,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
         // view parameters (will change with viewport updates)
         var scale = 50;
-        var offsetX = 200;
-        var offsetY = 200;
+        var offset = new Point(200,200);
         var dot_size = scale / 3;
         var dual_dot_size = dot_size * 1.3;
 
@@ -84,14 +83,15 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
         function toPix(array_of_values) {
             // for now, this projects onto first two dimensions.
-            return new Point(array_of_values[0] * scale + offsetX, array_of_values[1] * scale + offsetY);
+            return toPixD(array_of_values).add(offset);
         }
         function toPixD (array_of_values) {
-            return new Point(array_of_values[0] * scale, array_of_values[1] * scale);  }
+            return new Point(Vec.scale(array_of_values, scale));  }
 
         function fromPix(point) {
-            return [(point.x - offsetX) / scale, (point.y - offsetY) / scale]
-        }
+            return Vec.scale(point.subtract(offset).toArray(), 1 / scale);          }
+        function fromPixD(point) {
+            return Vec.scale(point.toArray(), 1 / scale);          }
 
         function dual_blade(blade) {
             // this is really dumb.
@@ -104,11 +104,12 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
         core.toPix = toPix;
         core.toPixD = toPixD;
         core.fromPix = fromPix;
+        core.fromPixD = fromPixD;
 
         core.new_pos = function () {
             var vs = paper.view.size;
-            return new Point(Math.random() * vs.x / scale - offsetX * 2,
-                Math.random() * vs.y / scale - offsetY * 2);
+            return new Point(Math.random() * vs.x / scale - offset.x * 2,
+                Math.random() * vs.y / scale - offset.y * 2);
         };
 
         core.points = {};
@@ -173,7 +174,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                     this.ptext.remove();
 
                 // update connections to things above by removing those things.
-                for( ns of this.sup) {
+                for( ns of this.sup.slice()) {
                     if(ns in this._sup_type)
                         this._sup_type[ns].remove();
                 }
@@ -192,6 +193,7 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
 
                 if(this.flipped)
                     this.flipped.remove();
+
             },
             log_changes : function (fields) {/* assume fields are sent as varargs */
                 let n = this.name; let d = this.dim;
@@ -206,6 +208,8 @@ paper.Point.prototype.toArray = function() { return [this.x, this.y];};
                     for(f of arguments)
                         core.evolution_log.push({type: "update", name: n, dim: d, field: f, data: datacopy[f] })
                 }
+            },
+            update_display : function () {
             }
         };
 

@@ -1,4 +1,16 @@
 $(function() {
+    let crsf_token =  $('meta[name="csrf-token"]').attr('content');
+    let $post = function (url, data, content_type) {
+        return $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: content_type || 'application/json',
+            beforeSend: function (xhr) {
+                xhr.setRequestHeader('Csrf-Token', crsf_token);
+            },
+            data: data
+        })
+    };
 
     $.getJSON('/w/'+wid+'/get').done( function(data) {
         function make(Kind) {
@@ -56,19 +68,21 @@ $(function() {
 
     function mkAction(btn_selector, promise) {
         $(btn_selector).click( function() {
-            let $this = $(this)
-            let $cl = $this.find('.circle-loader');
+            let $this = $(this);
             if ($this.is(":disabled"))
                 return;
 
-            let token = $('meta[name="csrf-token"]').attr('content');
-            $this.find('svg').hide();
-            $this.find('span.action-label').addClass("moved", 300);
-            $this.prop('disabled', true).addClass('borderless', 200);
-            $cl.removeClass('load-complete');
-            $cl.show();
+            let $cl = $this.find('.circle-loader');
 
-            function reset(kind) {
+            function show_go() {
+                $this.find('svg').hide();
+                $this.find('span.action-label').addClass("moved", 300);
+                $this.prop('disabled', true).addClass('borderless', 200);
+                $cl.removeClass('load-complete');
+                $cl.show();
+            }
+
+            function show_reset(kind) {
                 $this.delay(2100).removeClass('borderless', 500).queue(function () {
                     $this.prop('disabled', false);
                     $this.find('svg').show();
@@ -91,29 +105,33 @@ $(function() {
                 }).dequeue('classes');//.removeClass('load-complete', 0);
             }
 
-            promise(token).done(function (data) {
+            show_go();
+            promise().done(function (data) {
                 //$('#save-abutton').
                 core.evolution_log.length = 0;
-                reset('check');
+                show_reset('check');
             }).fail(function (err, a, b) {
-                reset('cross');
+                show_reset('cross');
             }).always(function () {
             });
         });
     }
 
 
-    mkAction('.btn-outline-dark', function(token) {
-        return $.ajax({
-            url: '/w/' + wid + '/evolve',
-            type: 'POST',
-            contentType: 'application/json',
-            beforeSend: function (xhr) {
-                //xhr.setRequestHeader('X-CSRF-Token', token);
-                xhr.setRequestHeader('Csrf-Token', token);
-            },
-            data: JSON.stringify(core.evolution_log)
+    mkAction('.btn-outline-dark', function() {
+
+
+        return $post( '/w/' + wid + '/evolve', JSON.stringify(core.evolution_log)).then(function() {
+            let svg = paper.project.exportSVG();
+            let b = paper.project.activeLayer.bounds;
+            svg.setAttribute('viewBox', Math.floor(b.x) + ' '+Math.floor(b.y)+' '+ Math.ceil(b.width)+' '+ Math.ceil(b.height) );
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '10em');
+
+            return $post('/w/'+wid+'/svg_update',  (new XMLSerializer()).serializeToString(svg), 'text/plain')
         })
+
+
     });
 
 

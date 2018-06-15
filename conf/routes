@@ -3,17 +3,19 @@
 # ~~~~
 
 # Home page
-GET        /                             controllers.Application.index
-GET        /w/new                        controllers.Application.new_ws
-GET        /w/$wid<[0-9]*>/get           controllers.Application.get_cells(wid : Long)
-POST       /w/$wid<[0-9]*>/update        controllers.Application.update_cell(wid : Long)
-POST       /w/$wid<[0-9]*>/evolve        controllers.Application.apply_evolutions(wid : Long)
-GET        /w/$wid<[0-9]*>/              controllers.Application.display(wid : Long)
+GET       /                             controllers.Application.index
+GET       /w/new                        controllers.Application.new_ws
+GET       /w/$wid<[0-9]*>/get           controllers.Application.get_cells(wid : Long)
+POST      /w/$wid<[0-9]*>/update        controllers.Application.update_cell(wid : Long)
+POST      /w/$wid<[0-9]*>/evolve        controllers.Application.apply_evolutions(wid : Long)
+POST      /w/$wid<[0-9]*>/svg_update    controllers.Application.update_preview(wid : Long)
+GET       /s/shape                      controllers.Application.shape
+GET       /w/$wid<[0-9]*>/              controllers.Application.display(wid : Long)
 
-GET         /debug/table/:tabname        controllers.DebugCtrl.show_table( tabname : String)
-GET         /debug/tables                controllers.DebugCtrl.list_tables
+GET       /debug/table/:tabname        controllers.DebugCtrl.show_table( tabname : String)
+GET       /debug/tables                controllers.DebugCtrl.list_tables
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file                controllers.Assets.at(path="/public", file)
+GET       /assets/*file                controllers.Assets.at(path="/public", file)
 
 

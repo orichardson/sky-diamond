@@ -70,24 +70,29 @@
         })();
 
 
+        let cell_hit_options = {
+            fill: true,
+            stroke: true,
+            segments: true,
+            tolerance: 4,
+            match: hr => ("cell" in hr.item)
+        };
+        function pickCell(pt, f){
+            let hit = paper.project.hitTest(pt, cell_hit_options );
+            if(hit) {
+                let c = hit.item.cell;
+                return f ? f(c): c;
+            }
+        }
+
+
         let eraseTool = (function() {
             let t = new Tool();
 
-            let hit_options = {
-                fill: true,
-                stroke: true,
-                segments: true,
-                tolerance: 4,
-                match: hr => ("cell" in hr.item)
-            };
 
             t.minDistance = 1;
             function eraseAt(pt) {
-                let hit = paper.project.hitTest(pt, hit_options );
-
-                if(hit) {
-                    hit.item.cell.remove();
-                }
+                pickCell(pt, x => x.remove());
             }
 
 
@@ -100,14 +105,9 @@
                 eraseAt(event.point);
             };
 
-            t.onMouseUp = function(event) {
-            };
-
-            t.onKeyUp = function(event) {
-            };
-            t.onKeyDown = function(event) {
-
-            };
+            t.onMouseUp = function(event) {};
+            t.onKeyUp = function(event) {} ;
+            t.onKeyDown = function(event) {};
             return t;
         })();
 
@@ -159,10 +159,68 @@
             return t;
         })();
 
+        let moveTool = (function() {
+            let t = new Tool();
+
+            var activeStart, dragStart, active, last;
+
+            function update(event) {
+
+
+                if(active) {
+                    active.dset('pos', Vec.plus(diff, activeStart));
+                    active.path.translate( event.delta );
+                    active.ptext.translate( event.delta );
+                }
+            }
+
+            t.onMouseDown = function(event) {
+                active = pickCell(event.point);
+                if(active) {
+                    activeStart = active.pos;
+                    dragStart = event.point;
+                }
+            };
+
+            t.onMouseDrag = function(event) {
+                let diffPix = event.point.subtract(dragStart);
+
+                if(active) {
+                    active.path.translate( event.delta );
+                    active.ptext.translate( event.delta );
+                    //active.flipped.path
+                    last = diffPix;
+                }
+            };
+
+            t.onMouseUp = function(event) {
+                let diffPix = event.point.subtract(dragStart);
+                let diff = core.fromPixD(diffPix);
+
+                if(active) {
+                    active.dset('pos', Vec.plus(diff, activeStart));
+                    active.path.translate( event.delta.subtract(last) );
+                    active.ptext.translate( event.delta.subtract(last) );
+                }
+
+                active = undefined;
+                activeStart = undefined;
+                dragStart = undefined;
+            };
+
+            t.onKeyUp = function(event) {
+            };
+            t.onKeyDown = function(event) {
+
+            };
+            return t;
+        })();
+
 
         global.tools = { draw : drawTool,
             erase : eraseTool,
             manual: manualTool,
+            move : moveTool,
             dud : new Tool()};
     });
 

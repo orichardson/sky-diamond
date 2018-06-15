@@ -1,8 +1,10 @@
 package diagrams.complexes
 
 
+import io.TableWrappers.CellRow
 import shapeless.{Nat, Succ}
 import shapeless.Nat.{_0, _1, _2}
+import shapeless.ops.nat.ToInt
 
 import scala.collection.mutable
 
@@ -21,6 +23,9 @@ trait NCell[NumType, Dim <: Nat] {
   type PrevDim <: Nat
   type CellType[D <: Nat] <: NCell[NumType, D]
 
+  protected[diagrams] implicit val tointPrevD : ToInt[PrevDim]
+  protected[diagrams] implicit val tointD : ToInt[Dim]
+  def dim : Int = tointD.apply()
 
   // keep track internally of all of the things that are built out of me; every time
   // the constructor of a (n+1)-cell is called, update this.
@@ -31,12 +36,18 @@ trait NCell[NumType, Dim <: Nat] {
 }
 
 object NCell {
+
   trait ZCell[NumType] extends NCell[NumType, _0] {
     type PrevDim = Nothing
-    override def boundary: Seq[CellType[PrevDim]] = Nil
+    override protected[diagrams] val tointD : ToInt[_0] = ToInt[_0]
+    override protected[diagrams] val tointPrevD : ToInt[PrevDim] = null
+    override def boundary: Seq[CellType[Nothing]] = Nil
   }
 
-  trait SCell[NumType, PrevD <: Nat] extends NCell[NumType, Succ[PrevD]] {
+  abstract class SCell[NumType, PrevD <: Nat:ToInt] extends NCell[NumType, Succ[PrevD]] {
     override type PrevDim = PrevD
+
+    override protected[diagrams] val tointPrevD : ToInt[PrevD] = ToInt[PrevD]
+    override protected[diagrams] val tointD : ToInt[Succ[PrevD]] = ToInt.toIntSucc[PrevD](tointPrevD)
   }
 }
